@@ -12,7 +12,7 @@ import { COLORS, FONT_SIZES } from "../../constants";
 import i18n from "../../i18n";
 
 export default function VerifyOtpScreen({ route }: { route: any }) {
-  const { phone_number } = route.params;
+  const { phone_number, dev_otp } = route.params;
   const [otp, setOtp] = useState("");
   const [countdown, setCountdown] = useState(30);
   const [error, setError] = useState("");
@@ -68,8 +68,8 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {__DEV__ && (
-        <Text style={styles.devHint}>Check API response for OTP</Text>
+      {__DEV__ && dev_otp && (
+        <Text style={styles.devHint}>DEV OTP: {dev_otp}</Text>
       )}
 
       <TouchableOpacity

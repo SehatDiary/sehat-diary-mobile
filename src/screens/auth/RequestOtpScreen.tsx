@@ -24,8 +24,11 @@ export default function RequestOtpScreen({ navigation }: { navigation: any }) {
 
     const fullPhone = `+91${phone}`;
     requestOtp.mutate(fullPhone, {
-      onSuccess: () => {
-        navigation.navigate("VerifyOtp", { phone_number: fullPhone });
+      onSuccess: (data) => {
+        navigation.navigate("VerifyOtp", {
+          phone_number: fullPhone,
+          dev_otp: data.otp,
+        });
       },
       onError: () => {
         Alert.alert("Error", "Failed to send OTP. Please try again.");
