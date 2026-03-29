@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "sehat-diary-mobile",
+    "name": "Sehat Diary",
     "slug": "sehat-diary-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,24 +10,55 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2D6A4F"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sehatdiary.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sehat Diary needs camera access to scan prescriptions",
+        "NSPhotoLibraryUsageDescription": "Sehat Diary needs photo library access to upload prescriptions"
+      }
     },
     "android": {
+      "package": "com.sehatdiary.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2D6A4F"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sehat Diary needs photo access to upload prescriptions",
+          "cameraPermission": "Sehat Diary needs camera access to scan prescriptions"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Sehat Diary needs camera access to scan prescriptions"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "sehat-diary"
+      }
+    }
   }
 }
