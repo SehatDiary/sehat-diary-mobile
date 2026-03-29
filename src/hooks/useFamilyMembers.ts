@@ -4,6 +4,9 @@ import {
   getFamilyMember,
   createFamilyMember,
   updateFamilyMember,
+  getHealthSessions,
+  getHealthSession,
+  createHealthSession,
 } from "../api/familyMembers";
 
 export const useGetFamilyMembers = () => {
@@ -39,6 +42,33 @@ export const useUpdateFamilyMember = () => {
       updateFamilyMember(id, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+    },
+  });
+};
+
+export const useGetHealthSession = (memberId: number, sessionId: number) => {
+  return useQuery({
+    queryKey: ["healthSession", memberId, sessionId],
+    queryFn: () => getHealthSession(memberId, sessionId),
+  });
+};
+
+export const useGetHealthSessions = (memberId: number) => {
+  return useQuery({
+    queryKey: ["healthSessions", memberId],
+    queryFn: () => getHealthSessions(memberId),
+  });
+};
+
+export const useCreateHealthSession = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ memberId, startedAt }: { memberId: number; startedAt: string }) =>
+      createHealthSession(memberId, { started_at: startedAt }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["healthSessions", variables.memberId] });
+      queryClient.invalidateQueries({ queryKey: ["familyMember", variables.memberId] });
     },
   });
 };

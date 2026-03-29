@@ -72,3 +72,10 @@ export interface AuthResponse {
   token: string;
   user: User;
 }
+
+export type CaregiverStackParamList = {
+  Dashboard: undefined;
+  AddFamilyMember: undefined;
+  FamilyMember: { memberId: number };
+  SessionDetail: { memberId: number; sessionId: number };
+};
