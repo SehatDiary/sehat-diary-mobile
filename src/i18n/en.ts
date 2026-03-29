@@ -1,0 +1,43 @@
+export default {
+  auth: {
+    enterPhone: "Enter your phone number",
+    enterOtp: "Enter OTP",
+    sendOtp: "Send OTP",
+    verify: "Verify",
+    resendOtp: "Resend OTP",
+    invalidOtp: "Invalid OTP",
+    tagline: "Your Health, Your Diary",
+  },
+  medicines: {
+    title: "Today's Medicines",
+    taken: "Taken ✓",
+    pending: "Pending",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    night: "Night",
+    noMedicines: "No medicines for today",
+  },
+  dashboard: {
+    title: "Family",
+    addMember: "Add Family Member",
+    noMembers: "No members yet",
+    weeklyAdherence: "Weekly Adherence",
+    activeMedicines: "Active Medicines",
+  },
+  reminders: {
+    missed: "Medicine Missed",
+    timeToTake: "Time to take medicine",
+    reportIssue: "Having trouble?",
+    alertFamily: "Alert Family",
+  },
+  common: {
+    loading: "Loading...",
+    error: "Something went wrong",
+    retry: "Try again",
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    confirm: "Confirm",
+  },
+};

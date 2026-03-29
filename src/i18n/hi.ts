@@ -1,0 +1,43 @@
+export default {
+  auth: {
+    enterPhone: "अपना फ़ोन नंबर दर्ज करें",
+    enterOtp: "OTP दर्ज करें",
+    sendOtp: "OTP भेजें",
+    verify: "सत्यापित करें",
+    resendOtp: "OTP दोबारा भेजें",
+    invalidOtp: "गलत OTP",
+    tagline: "अपनी सेहत, अपनी डायरी",
+  },
+  medicines: {
+    title: "आज की दवाइयाँ",
+    taken: "ली ✓",
+    pending: "लेना है",
+    morning: "सुबह",
+    afternoon: "दोपहर",
+    evening: "शाम",
+    night: "रात",
+    noMedicines: "आज कोई दवाई नहीं",
+  },
+  dashboard: {
+    title: "परिवार",
+    addMember: "परिवार का सदस्य जोड़ें",
+    noMembers: "अभी तक कोई सदस्य नहीं",
+    weeklyAdherence: "साप्ताहिक पालन",
+    activeMedicines: "सक्रिय दवाइयाँ",
+  },
+  reminders: {
+    missed: "दवाई छूट गई",
+    timeToTake: "दवाई लेने का समय",
+    reportIssue: "कुछ तकलीफ है?",
+    alertFamily: "परिवार को बताएं",
+  },
+  common: {
+    loading: "लोड हो रहा है...",
+    error: "कुछ गलत हो गया",
+    retry: "दोबारा कोशिश करें",
+    save: "सहेजें",
+    cancel: "रद्द करें",
+    delete: "हटाएं",
+    confirm: "पुष्टि करें",
+  },
+};
