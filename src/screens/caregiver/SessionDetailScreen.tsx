@@ -8,11 +8,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useGetHealthSession } from "../../hooks/useFamilyMembers";
 import { CaregiverStackParamList, Prescription, Medicine } from "../../types";
 import i18n from "../../i18n";
 
+type Nav = StackNavigationProp<CaregiverStackParamList, "SessionDetail">;
 type Route = RouteProp<CaregiverStackParamList, "SessionDetail">;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -99,7 +101,7 @@ function PrescriptionSection({ prescription }: { prescription: Prescription }) {
 }
 
 export default function SessionDetailScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { memberId, sessionId } = route.params;
 
@@ -169,6 +171,18 @@ export default function SessionDetailScreen() {
           ))
         )}
       </ScrollView>
+
+      {session?.status === "active" && (
+        <TouchableOpacity
+          style={styles.uploadFab}
+          activeOpacity={0.8}
+          onPress={() =>
+            navigation.navigate("UploadPrescription", { memberId, sessionId })
+          }
+        >
+          <Text style={styles.uploadFabText}>📋 +</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -323,5 +337,25 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: FONT_SIZES.medium,
     color: COLORS.textSecondary,
+  },
+  uploadFab: {
+    position: "absolute",
+    right: 20,
+    bottom: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  uploadFabText: {
+    fontSize: 20,
+    color: COLORS.white,
   },
 });

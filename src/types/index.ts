@@ -78,4 +78,5 @@ export type CaregiverStackParamList = {
   AddFamilyMember: undefined;
   FamilyMember: { memberId: number };
   SessionDetail: { memberId: number; sessionId: number };
+  UploadPrescription: { memberId: number; sessionId: number };
 };
