@@ -48,6 +48,49 @@ export interface Medicine {
   end_date: string | null;
 }
 
+export interface DoctorVisit {
+  id: number;
+  doctor_name: string | null;
+  hospital_name: string | null;
+  visit_date: string;
+  diagnosis: string | null;
+  summary_hi: string | null;
+  summary_en: string | null;
+  patient_name_match: boolean;
+  medicines: Medicine[];
+  tests: PrescribedTest[];
+  referrals: Referral[];
+  instructions: VisitInstruction[];
+}
+
+export interface PrescribedTest {
+  id: number;
+  name: string;
+  status: "pending" | "completed";
+  completed_at: string | null;
+}
+
+export interface Referral {
+  id: number;
+  specialist: string;
+  reason: string | null;
+  status: "pending" | "visited";
+  visited_at: string | null;
+}
+
+export interface VisitInstruction {
+  id: number;
+  category: "exercise" | "diet" | "device" | "general";
+  text_hi: string;
+  text_en: string | null;
+}
+
+export interface ConfirmPrescriptionResult {
+  success: boolean;
+  medicines_count: number;
+  doctor_visit: DoctorVisit;
+}
+
 export interface AdherenceLog {
   id: number;
   medicine_name: string;
@@ -79,4 +122,9 @@ export type CaregiverStackParamList = {
   FamilyMember: { memberId: number };
   SessionDetail: { memberId: number; sessionId: number };
   UploadPrescription: { memberId: number; sessionId: number };
+  VisitConfirmed: {
+    memberId: number;
+    sessionId: number;
+    doctorVisit: DoctorVisit;
+  };
 };

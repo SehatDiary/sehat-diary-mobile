@@ -6,6 +6,7 @@ import AddFamilyMemberScreen from "../screens/caregiver/AddFamilyMemberScreen";
 import FamilyMemberScreen from "../screens/caregiver/FamilyMemberScreen";
 import SessionDetailScreen from "../screens/caregiver/SessionDetailScreen";
 import UploadPrescriptionScreen from "../screens/caregiver/UploadPrescriptionScreen";
+import VisitConfirmedScreen from "../screens/caregiver/VisitConfirmedScreen";
 
 const Stack = createStackNavigator<CaregiverStackParamList>();
 
@@ -17,6 +18,7 @@ export default function CaregiverNavigator() {
       <Stack.Screen name="FamilyMember" component={FamilyMemberScreen} />
       <Stack.Screen name="SessionDetail" component={SessionDetailScreen} />
       <Stack.Screen name="UploadPrescription" component={UploadPrescriptionScreen} />
+      <Stack.Screen name="VisitConfirmed" component={VisitConfirmedScreen} />
     </Stack.Navigator>
   );
 }

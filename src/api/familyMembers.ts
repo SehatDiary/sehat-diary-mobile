@@ -1,5 +1,5 @@
 import client from "./client";
-import { FamilyMember, HealthSession, Prescription } from "../types";
+import { FamilyMember, HealthSession, Prescription, DoctorVisit } from "../types";
 
 export const getFamilyMembers = async (): Promise<FamilyMember[]> => {
   const { data } = await client.get("/family_members");
@@ -44,11 +44,15 @@ export const getHealthSessions = async (
 export const getHealthSession = async (
   familyMemberId: number,
   sessionId: number
-): Promise<{ health_session: HealthSession; prescriptions: Prescription[] }> => {
+): Promise<{
+  health_session: HealthSession;
+  prescriptions: Prescription[];
+  doctor_visits: DoctorVisit[];
+}> => {
   const { data } = await client.get(
     `/family_members/${familyMemberId}/health_sessions/${sessionId}`
   );
-  return data;
+  return { ...data, doctor_visits: data.doctor_visits ?? [] };
 };
 
 export const createHealthSession = async (

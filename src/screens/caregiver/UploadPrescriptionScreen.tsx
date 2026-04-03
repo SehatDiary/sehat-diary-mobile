@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import * as ImagePicker from "expo-image-picker";
 import { COLORS, FONT_SIZES } from "../../constants";
 import {
@@ -20,6 +21,7 @@ import {
 import { CaregiverStackParamList } from "../../types";
 import i18n from "../../i18n";
 
+type Nav = StackNavigationProp<CaregiverStackParamList, "UploadPrescription">;
 type Route = RouteProp<CaregiverStackParamList, "UploadPrescription">;
 
 type ScreenState = "idle" | "processing" | "review" | "error";
@@ -33,7 +35,7 @@ interface ExtractedMedicine {
 }
 
 export default function UploadPrescriptionScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { memberId, sessionId } = route.params;
 
@@ -116,7 +118,29 @@ export default function UploadPrescriptionScreen() {
         confirmedData: { medicines: medicines as unknown as Record<string, unknown>[] },
       },
       {
-        onSuccess: () => navigation.goBack(),
+        onSuccess: (result) => {
+          if (result.doctor_visit) {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 2,
+                routes: [
+                  { name: "Dashboard" },
+                  { name: "SessionDetail", params: { memberId, sessionId } },
+                  {
+                    name: "VisitConfirmed",
+                    params: {
+                      memberId,
+                      sessionId,
+                      doctorVisit: result.doctor_visit,
+                    },
+                  },
+                ],
+              })
+            );
+          } else {
+            navigation.goBack();
+          }
+        },
         onError: () => Alert.alert(i18n.t("common.error")),
       }
     );
