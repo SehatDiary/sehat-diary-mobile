@@ -7,6 +7,7 @@ import {
   getHealthSessions,
   getHealthSession,
   createHealthSession,
+  getPendingActions,
 } from "../api/familyMembers";
 
 export const useGetFamilyMembers = () => {
@@ -70,5 +71,12 @@ export const useCreateHealthSession = () => {
       queryClient.invalidateQueries({ queryKey: ["healthSessions", variables.memberId] });
       queryClient.invalidateQueries({ queryKey: ["familyMember", variables.memberId] });
     },
+  });
+};
+
+export const useGetPendingActions = () => {
+  return useQuery({
+    queryKey: ["pendingActions"],
+    queryFn: getPendingActions,
   });
 };
