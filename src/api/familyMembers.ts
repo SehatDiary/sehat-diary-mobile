@@ -1,5 +1,5 @@
 import client from "./client";
-import { FamilyMember, HealthSession, Prescription, DoctorVisit } from "../types";
+import { FamilyMember, HealthSession, Prescription, DoctorVisit, PendingActionsResponse } from "../types";
 
 export const getFamilyMembers = async (): Promise<FamilyMember[]> => {
   const { data } = await client.get("/family_members");
@@ -64,4 +64,9 @@ export const createHealthSession = async (
     params
   );
   return data.health_session;
+};
+
+export const getPendingActions = async (): Promise<PendingActionsResponse> => {
+  const { data } = await client.get("/pending_actions");
+  return data;
 };

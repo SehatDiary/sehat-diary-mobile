@@ -85,6 +85,43 @@ export interface VisitInstruction {
   text_en: string | null;
 }
 
+export interface PendingTestAction {
+  id: number;
+  test_name: string;
+  doctor_name: string | null;
+  ordered_date: string;
+  family_member_id: number;
+  family_member_name: string;
+  health_session_id: number;
+}
+
+export interface PendingReferralAction {
+  id: number;
+  specialist: string;
+  reason: string | null;
+  doctor_name: string | null;
+  family_member_id: number;
+  family_member_name: string;
+  health_session_id: number;
+}
+
+export interface UpcomingFollowup {
+  id: number;
+  doctor_name: string | null;
+  next_visit_date: string;
+  days_remaining: number;
+  family_member_id: number;
+  family_member_name: string;
+  health_session_id: number;
+}
+
+export interface PendingActionsResponse {
+  pending_tests: PendingTestAction[];
+  pending_referrals: PendingReferralAction[];
+  upcoming_followups: UpcomingFollowup[];
+  total_count: number;
+}
+
 export interface ConfirmPrescriptionResult {
   success: boolean;
   medicines_count: number;
