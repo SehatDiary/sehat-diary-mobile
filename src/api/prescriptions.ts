@@ -1,4 +1,5 @@
 import client from "./client";
+import { ConfirmPrescriptionResult, DoctorVisit, PrescribedTest, Referral } from "../types";
 
 export const uploadImage = async (uri: string): Promise<{ url: string }> => {
   const formData = new FormData();
@@ -40,10 +41,43 @@ export const confirmPrescription = async (
   healthSessionId: number,
   prescriptionId: number,
   confirmedData: { medicines: Record<string, unknown>[] }
-): Promise<{ success: boolean; medicines_count: number }> => {
+): Promise<ConfirmPrescriptionResult> => {
   const { data } = await client.post(
     `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescriptions/${prescriptionId}/confirm`,
     { confirmed_data: confirmedData }
   );
   return data;
+};
+
+export const getDoctorVisit = async (
+  familyMemberId: number,
+  healthSessionId: number,
+  doctorVisitId: number
+): Promise<DoctorVisit> => {
+  const { data } = await client.get(
+    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/doctor_visits/${doctorVisitId}`
+  );
+  return data.doctor_visit;
+};
+
+export const markTestCompleted = async (
+  familyMemberId: number,
+  healthSessionId: number,
+  testId: number
+): Promise<PrescribedTest> => {
+  const { data } = await client.patch(
+    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescribed_tests/${testId}/complete`
+  );
+  return data.prescribed_test;
+};
+
+export const markReferralVisited = async (
+  familyMemberId: number,
+  healthSessionId: number,
+  referralId: number
+): Promise<Referral> => {
+  const { data } = await client.patch(
+    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/referrals/${referralId}/visited`
+  );
+  return data.referral;
 };

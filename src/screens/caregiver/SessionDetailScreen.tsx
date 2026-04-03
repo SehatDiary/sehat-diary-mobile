@@ -6,12 +6,25 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useGetHealthSession } from "../../hooks/useFamilyMembers";
-import { CaregiverStackParamList, Prescription, Medicine } from "../../types";
+import {
+  useMarkTestCompleted,
+  useMarkReferralVisited,
+} from "../../hooks/usePrescriptions";
+import {
+  CaregiverStackParamList,
+  Prescription,
+  Medicine,
+  DoctorVisit,
+  PrescribedTest,
+  Referral,
+  VisitInstruction,
+} from "../../types";
 import i18n from "../../i18n";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "SessionDetail">;
@@ -22,6 +35,13 @@ const STATUS_COLORS: Record<string, string> = {
   extracted: COLORS.primaryLight,
   confirmed: COLORS.success,
   failed: COLORS.error,
+};
+
+const INSTRUCTION_ICONS: Record<VisitInstruction["category"], string> = {
+  exercise: "\u{1F3C3}",
+  diet: "\u{1F957}",
+  device: "\u{1F527}",
+  general: "\u{1F4CB}",
 };
 
 function statusLabel(status: string) {
@@ -100,6 +120,176 @@ function PrescriptionSection({ prescription }: { prescription: Prescription }) {
   );
 }
 
+function DoctorVisitCard({ visit }: { visit: DoctorVisit }) {
+  return (
+    <View style={styles.doctorVisitCard}>
+      <Text style={styles.sectionHeading}>{i18n.t("session.doctorVisit")}</Text>
+      {visit.doctor_name && (
+        <View style={styles.visitRow}>
+          <Text style={styles.visitLabel}>{i18n.t("session.doctor")}</Text>
+          <Text style={styles.visitValue}>{visit.doctor_name}</Text>
+        </View>
+      )}
+      {visit.hospital_name && (
+        <View style={styles.visitRow}>
+          <Text style={styles.visitLabel}>{i18n.t("session.hospital")}</Text>
+          <Text style={styles.visitValue}>{visit.hospital_name}</Text>
+        </View>
+      )}
+      <View style={styles.visitRow}>
+        <Text style={styles.visitLabel}>{i18n.t("session.visitDate")}</Text>
+        <Text style={styles.visitValue}>{formatDate(visit.visit_date)}</Text>
+      </View>
+      {visit.diagnosis && (
+        <View style={styles.visitRow}>
+          <Text style={styles.visitLabel}>{i18n.t("session.diagnosis")}</Text>
+          <Text style={styles.visitValue}>{visit.diagnosis}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function PendingActionsSection({
+  tests,
+  referrals,
+  memberId,
+  sessionId,
+}: {
+  tests: PrescribedTest[];
+  referrals: Referral[];
+  memberId: number;
+  sessionId: number;
+}) {
+  const markTest = useMarkTestCompleted();
+  const markReferral = useMarkReferralVisited();
+
+  const pendingTests = tests.filter((t) => t.status === "pending");
+  const pendingReferrals = referrals.filter((r) => r.status === "pending");
+
+  if (pendingTests.length === 0 && pendingReferrals.length === 0) return null;
+
+  const handleMarkTest = (testId: number) => {
+    markTest.mutate(
+      { familyMemberId: memberId, healthSessionId: sessionId, testId },
+      { onError: () => Alert.alert(i18n.t("common.error")) }
+    );
+  };
+
+  const handleMarkReferral = (referralId: number) => {
+    markReferral.mutate(
+      { familyMemberId: memberId, healthSessionId: sessionId, referralId },
+      { onError: () => Alert.alert(i18n.t("common.error")) }
+    );
+  };
+
+  return (
+    <View style={styles.actionsSection}>
+      <Text style={styles.sectionHeading}>{i18n.t("session.pendingActions")}</Text>
+
+      {pendingTests.length > 0 && (
+        <>
+          <Text style={styles.subHeading}>{i18n.t("session.testsOrdered")}</Text>
+          {pendingTests.map((test) => (
+            <View key={test.id} style={styles.actionItem}>
+              <View style={styles.actionInfo}>
+                <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
+                <Text style={styles.actionName}>{test.name}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleMarkTest(test.id)}
+                disabled={markTest.isPending}
+              >
+                <Text style={styles.actionButtonText}>
+                  {i18n.t("session.markDone")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </>
+      )}
+
+      {pendingReferrals.length > 0 && (
+        <>
+          <Text style={styles.subHeading}>{i18n.t("session.referrals")}</Text>
+          {pendingReferrals.map((ref) => (
+            <View key={ref.id} style={styles.actionItem}>
+              <View style={styles.actionInfo}>
+                <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
+                <View style={styles.actionTextGroup}>
+                  <Text style={styles.actionName}>{ref.specialist}</Text>
+                  {ref.reason && (
+                    <Text style={styles.actionDetail}>{ref.reason}</Text>
+                  )}
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleMarkReferral(ref.id)}
+                disabled={markReferral.isPending}
+              >
+                <Text style={styles.actionButtonText}>
+                  {i18n.t("session.markVisited")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* Show completed tests */}
+      {tests.filter((t) => t.status === "completed").map((test) => (
+        <View key={test.id} style={[styles.actionItem, { opacity: 0.6 }]}>
+          <View style={styles.actionInfo}>
+            <View style={[styles.statusDot, { backgroundColor: COLORS.success }]} />
+            <Text style={styles.actionName}>{test.name}</Text>
+          </View>
+          <Text style={styles.completedLabel}>{i18n.t("session.completed")}</Text>
+        </View>
+      ))}
+
+      {/* Show visited referrals */}
+      {referrals.filter((r) => r.status === "visited").map((ref) => (
+        <View key={ref.id} style={[styles.actionItem, { opacity: 0.6 }]}>
+          <View style={styles.actionInfo}>
+            <View style={[styles.statusDot, { backgroundColor: COLORS.success }]} />
+            <Text style={styles.actionName}>{ref.specialist}</Text>
+          </View>
+          <Text style={styles.completedLabel}>{i18n.t("session.visited")}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function DoctorAdviceSection({
+  instructions,
+}: {
+  instructions: VisitInstruction[];
+}) {
+  if (instructions.length === 0) return null;
+
+  return (
+    <View style={styles.adviceSection}>
+      <Text style={styles.sectionHeading}>{i18n.t("session.doctorAdvice")}</Text>
+      {instructions.map((inst) => (
+        <View key={inst.id} style={styles.adviceItem}>
+          <Text style={styles.adviceIcon}>
+            {INSTRUCTION_ICONS[inst.category]}
+          </Text>
+          <View style={styles.adviceContent}>
+            <Text style={styles.adviceText}>{inst.text_hi}</Text>
+            {inst.text_en && (
+              <Text style={styles.adviceTextEn}>{inst.text_en}</Text>
+            )}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function SessionDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -117,6 +307,7 @@ export default function SessionDetailScreen() {
 
   const session = data?.health_session;
   const prescriptions = data?.prescriptions ?? [];
+  const doctorVisits = data?.doctor_visits ?? [];
 
   return (
     <View style={styles.container}>
@@ -159,7 +350,20 @@ export default function SessionDetailScreen() {
       )}
 
       <ScrollView contentContainerStyle={styles.content}>
-        {prescriptions.length === 0 ? (
+        {doctorVisits.map((visit) => (
+          <React.Fragment key={visit.id}>
+            <DoctorVisitCard visit={visit} />
+            <PendingActionsSection
+              tests={visit.tests}
+              referrals={visit.referrals}
+              memberId={memberId}
+              sessionId={sessionId}
+            />
+            <DoctorAdviceSection instructions={visit.instructions} />
+          </React.Fragment>
+        ))}
+
+        {prescriptions.length === 0 && doctorVisits.length === 0 ? (
           <View style={styles.emptySection}>
             <Text style={styles.emptyText}>
               {i18n.t("session.noPrescriptions")}
@@ -180,7 +384,7 @@ export default function SessionDetailScreen() {
             navigation.navigate("UploadPrescription", { memberId, sessionId })
           }
         >
-          <Text style={styles.uploadFabText}>📋 +</Text>
+          <Text style={styles.uploadFabText}>{"\u{1F4CB}"} +</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -245,6 +449,140 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 32,
   },
+
+  // Doctor visit card
+  doctorVisitCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  sectionHeading: {
+    fontSize: FONT_SIZES.large,
+    fontWeight: "bold",
+    color: COLORS.text,
+    marginBottom: 10,
+  },
+  visitRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  visitLabel: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+  },
+  visitValue: {
+    fontSize: FONT_SIZES.small,
+    fontWeight: "600",
+    color: COLORS.text,
+    flex: 1,
+    textAlign: "right",
+  },
+
+  // Pending actions
+  actionsSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  subHeading: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  actionItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+  },
+  actionInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  actionTextGroup: {
+    flex: 1,
+  },
+  actionName: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  actionDetail: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  actionButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  actionButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.small,
+    fontWeight: "600",
+  },
+  completedLabel: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.success,
+    fontWeight: "600",
+  },
+
+  // Doctor advice
+  adviceSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  adviceItem: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+  },
+  adviceIcon: {
+    fontSize: 20,
+    marginRight: 10,
+    marginTop: 2,
+  },
+  adviceContent: {
+    flex: 1,
+  },
+  adviceText: {
+    fontSize: FONT_SIZES.medium,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  adviceTextEn: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+
+  // Prescriptions
   prescriptionSection: {
     backgroundColor: COLORS.white,
     borderRadius: 10,
