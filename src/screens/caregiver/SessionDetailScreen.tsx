@@ -161,6 +161,7 @@ function PendingActionsSection({
   memberId: number;
   sessionId: number;
 }) {
+  const navigation = useNavigation<Nav>();
   const markTest = useMarkTestCompleted();
   const markReferral = useMarkReferralVisited();
 
@@ -196,15 +197,31 @@ function PendingActionsSection({
                 <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
                 <Text style={styles.actionName}>{test.name}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleMarkTest(test.id)}
-                disabled={markTest.isPending}
-              >
-                <Text style={styles.actionButtonText}>
-                  {i18n.t("session.markDone")}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.uploadLabButton}
+                  onPress={() =>
+                    navigation.navigate("UploadLabReport", {
+                      memberId,
+                      sessionId,
+                      prescribedTestId: test.id,
+                    })
+                  }
+                >
+                  <Text style={styles.uploadLabButtonText}>
+                    {"\u{1F9EA}"} {i18n.t("labReport.uploadLabReport")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleMarkTest(test.id)}
+                  disabled={markTest.isPending}
+                >
+                  <Text style={styles.actionButtonText}>
+                    {i18n.t("session.markDone")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </>
@@ -530,12 +547,28 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  actionButtons: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 6,
+    marginLeft: 10,
+  },
+  uploadLabButton: {
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  uploadLabButtonText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: "600",
+  },
   actionButton: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    marginLeft: 10,
   },
   actionButtonText: {
     color: COLORS.white,
