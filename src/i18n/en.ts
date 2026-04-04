@@ -10,7 +10,7 @@ export default {
   },
   medicines: {
     title: "Today's Medicines",
-    taken: "Taken ✓",
+    taken: "Taken \u2713",
     pending: "Pending",
     morning: "Morning",
     afternoon: "Afternoon",
@@ -145,10 +145,28 @@ export default {
     alertFamily: "Alert Family",
   },
   labReport: {
+    // Upload screen keys
     title: "Lab Report",
+    uploadTitle: "Lab Report Upload",
+    infoMultiPage:
+      "If report has multiple pages, upload all pages together so AI can read the full report.",
+    takePhoto: "Take Photo",
+    chooseGallery: "Upload from Gallery",
+    uploadPdf: "Upload PDF",
+    analyzeReport: "Analyze Report",
+    uploading: "Uploading %{current} of %{total} images...",
+    analyzing: "AI is reading your report...",
+    errorTitle: "Could not read report",
+    errorHint: "Try again with clearer photos",
+    tipLighting: "Good lighting",
+    tipSteady: "Hold camera steady",
+    tipVisible: "All text visible",
+    uploadLabReport: "Upload Lab Report",
+    maxImages: "Maximum 4 images allowed",
+    // Result screen keys
     analysisComplete: "Analysis Complete",
     actionRequired: "Action Required",
-    criticalHint: "These results need immediate attention — see your doctor",
+    criticalHint: "These results need immediate attention \u2014 see your doctor",
     summaryTitle: "Summary",
     english: "English",
     hindi: "\u0939\u093F\u0902\u0926\u0940",

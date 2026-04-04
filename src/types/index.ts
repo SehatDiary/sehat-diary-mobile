@@ -153,6 +153,22 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface LabReport {
+  id: number;
+  health_session_id: number;
+  prescribed_test_id: number | null;
+  status: "uploading" | "analyzing" | "completed" | "failed";
+  image_urls: string[];
+  pdf_url: string | null;
+  results: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface LabReportAnalysisStatus {
+  status: "uploading" | "analyzing" | "completed" | "failed";
+  lab_report: LabReport | null;
+}
+
 export interface LabReportFinding {
   id: number;
   parameter_name: string;
@@ -168,7 +184,7 @@ export interface LabReportFinding {
   section: string;
 }
 
-export interface LabReportResult {
+export interface LabReportResultData {
   id: number;
   lab_name: string | null;
   report_date: string | null;
@@ -191,6 +207,11 @@ export type CaregiverStackParamList = {
   FamilyMember: { memberId: number };
   SessionDetail: { memberId: number; sessionId: number };
   UploadPrescription: { memberId: number; sessionId: number };
+  UploadLabReport: {
+    memberId: number;
+    sessionId: number;
+    prescribedTestId?: number;
+  };
   LabReportResult: {
     memberId: number;
     sessionId: number;
