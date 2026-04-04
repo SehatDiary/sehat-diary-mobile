@@ -10,7 +10,7 @@ export default {
   },
   medicines: {
     title: "Today's Medicines",
-    taken: "Taken ✓",
+    taken: "Taken \u2713",
     pending: "Pending",
     morning: "Morning",
     afternoon: "Afternoon",
@@ -145,7 +145,9 @@ export default {
     alertFamily: "Alert Family",
   },
   labReport: {
-    title: "Lab Report Upload",
+    // Upload screen keys
+    title: "Lab Report",
+    uploadTitle: "Lab Report Upload",
     infoMultiPage:
       "If report has multiple pages, upload all pages together so AI can read the full report.",
     takePhoto: "Take Photo",
@@ -161,6 +163,33 @@ export default {
     tipVisible: "All text visible",
     uploadLabReport: "Upload Lab Report",
     maxImages: "Maximum 4 images allowed",
+    // Result screen keys
+    analysisComplete: "Analysis Complete",
+    actionRequired: "Action Required",
+    criticalHint: "These results need immediate attention \u2014 see your doctor",
+    summaryTitle: "Summary",
+    english: "English",
+    hindi: "\u0939\u093F\u0902\u0926\u0940",
+    findingsTitle: "Test Results",
+    normal: "Normal",
+    borderline: "Borderline",
+    high: "High",
+    low: "Low",
+    critical: "Critical",
+    showNormal: "Show all normal results",
+    hideNormal: "Hide normal results",
+    nextSteps: "What to do next",
+    nextStepsHi: "\u0905\u0917\u0932\u093E \u0915\u0926\u092E",
+    shareWithDoctor: "Share with Doctor",
+    disclaimer:
+      "This is for information only. Always consult your doctor.",
+    disclaimerHi:
+      "\u092F\u0939 \u0938\u093F\u0930\u094D\u092B\u093C \u091C\u093E\u0928\u0915\u093E\u0930\u0940 \u0915\u0947 \u0932\u093F\u090F \u0939\u0948\u0964 \u0921\u0949\u0915\u094D\u091F\u0930 \u0938\u0947 \u0938\u0932\u093E\u0939 \u0932\u0947\u0902\u0964",
+    nameMismatch: "Patient name on report may not match. Please verify.",
+    range: "Range",
+    value: "Value",
+    parameter: "Parameter",
+    copiedToClipboard: "Report summary copied!",
   },
   common: {
     loading: "Loading...",

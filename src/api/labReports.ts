@@ -1,5 +1,5 @@
 import client from "./client";
-import { LabReport, LabReportAnalysisStatus } from "../types";
+import { LabReport, LabReportAnalysisStatus, LabReportResultData } from "../types";
 
 export const uploadLabReport = async (
   familyMemberId: number,
@@ -56,7 +56,7 @@ export const getLabReport = async (
   familyMemberId: number,
   healthSessionId: number,
   reportId: number
-): Promise<LabReport> => {
+): Promise<LabReportResultData> => {
   const { data } = await client.get(
     `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/lab_reports/${reportId}`
   );

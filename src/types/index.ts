@@ -169,6 +169,38 @@ export interface LabReportAnalysisStatus {
   lab_report: LabReport | null;
 }
 
+export interface LabReportFinding {
+  id: number;
+  parameter_name: string;
+  hindi_name: string | null;
+  value: string;
+  unit: string | null;
+  normal_range_text: string | null;
+  status: "normal" | "borderline" | "high" | "low" | "critical";
+  status_color: string;
+  note: string | null;
+  hindi_note: string | null;
+  is_critical: boolean;
+  section: string;
+}
+
+export interface LabReportResultData {
+  id: number;
+  lab_name: string | null;
+  report_date: string | null;
+  patient_name: string | null;
+  patient_name_match: boolean;
+  analysis_status: "uploading" | "analyzing" | "completed" | "failed";
+  has_critical_findings: boolean;
+  hindi_summary: string | null;
+  english_summary: string | null;
+  next_steps: string | null;
+  next_steps_hindi: string | null;
+  image_urls: string[];
+  findings: LabReportFinding[];
+  created_at: string;
+}
+
 export type CaregiverStackParamList = {
   Dashboard: undefined;
   AddFamilyMember: undefined;
