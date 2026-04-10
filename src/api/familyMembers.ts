@@ -69,7 +69,10 @@ export const createHealthSession = async (
 export const getPendingActions = async (): Promise<PendingActionsResponse> => {
   const { data } = await client.get("/pending_actions");
   return {
-    ...data,
+    pending_tests: data.pending_tests ?? [],
+    pending_referrals: data.pending_referrals ?? [],
+    upcoming_followups: data.upcoming_followups ?? [],
     critical_lab_reports: data.critical_lab_reports ?? [],
+    total_count: data.total_count ?? 0,
   };
 };

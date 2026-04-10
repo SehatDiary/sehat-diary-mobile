@@ -247,13 +247,13 @@ function PendingActionsSection() {
     ...(data.critical_lab_reports ?? []).map(
       (c) => ({ type: "criticalLab" as const, data: c })
     ),
-    ...data.pending_tests.map(
+    ...(data.pending_tests ?? []).map(
       (t) => ({ type: "test" as const, data: t })
     ),
-    ...data.pending_referrals.map(
+    ...(data.pending_referrals ?? []).map(
       (r) => ({ type: "referral" as const, data: r })
     ),
-    ...data.upcoming_followups.map(
+    ...(data.upcoming_followups ?? []).map(
       (f) => ({ type: "followup" as const, data: f })
     ),
   ];
