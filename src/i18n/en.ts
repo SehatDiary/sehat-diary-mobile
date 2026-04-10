@@ -18,6 +18,8 @@ export default {
     night: "Night",
     noMedicines: "No medicines for today",
     missed: "Missed",
+    confirmedViaNotification: "Confirmed via notification",
+    reminderSent: "Reminder sent %{count}x",
   },
   dashboard: {
     title: "Family",

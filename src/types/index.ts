@@ -156,6 +156,8 @@ export interface AdherenceLog {
   taken_at: string;
   taken: boolean;
   notes: string | null;
+  acknowledged_at: string | null;
+  reminder_count: number;
 }
 
 export interface OtpRequest {

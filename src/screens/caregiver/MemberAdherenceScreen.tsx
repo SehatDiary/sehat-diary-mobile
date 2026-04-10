@@ -65,6 +65,20 @@ function MedicineCard({
           <Text style={styles.instructions}>{log.instructions_hi}</Text>
         )}
         {log.dosage && <Text style={styles.dosage}>{log.dosage}</Text>}
+        {log.taken && log.acknowledged_at && (
+          <Text style={styles.acknowledgedText}>
+            {i18n.t("medicines.confirmedViaNotification")} {"\u2022"}{" "}
+            {new Date(log.acknowledged_at).toLocaleTimeString("hi-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+        )}
+        {!log.taken && (log.reminder_count ?? 0) > 0 && (
+          <Text style={styles.reminderCountText}>
+            {i18n.t("medicines.reminderSent", { count: log.reminder_count })}
+          </Text>
+        )}
       </View>
       {log.taken ? (
         <View style={styles.takenBadge}>
@@ -269,6 +283,16 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.medium,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  acknowledgedText: {
+    fontSize: 13,
+    color: COLORS.success,
+    marginTop: 4,
+  },
+  reminderCountText: {
+    fontSize: 13,
+    color: COLORS.warning,
+    marginTop: 4,
   },
   takenBadge: {
     backgroundColor: "#E8F5E9",
