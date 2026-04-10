@@ -21,6 +21,7 @@ import {
   PendingTestAction,
   PendingReferralAction,
   UpcomingFollowup,
+  CriticalLabReportAction,
 } from "../../types";
 import i18n from "../../i18n";
 
@@ -188,10 +189,46 @@ function FollowupCard({ item }: { item: UpcomingFollowup }) {
   );
 }
 
+function CriticalLabReportCard({ item }: { item: CriticalLabReportAction }) {
+  const navigation = useNavigation<Nav>();
+
+  return (
+    <TouchableOpacity
+      style={[styles.actionCard, styles.criticalCard]}
+      activeOpacity={0.7}
+      onPress={() =>
+        navigation.navigate("LabReportResult", {
+          memberId: item.family_member_id,
+          sessionId: item.health_session_id,
+          reportId: item.id,
+        })
+      }
+    >
+      <View style={styles.actionIconWrap}>
+        <Text style={styles.actionIcon}>{"\u{1F6A8}"}</Text>
+      </View>
+      <View style={styles.actionContent}>
+        <Text style={styles.actionName}>
+          {i18n.t("labReport.criticalReportTitle", {
+            lab: item.lab_name ?? i18n.t("labReport.title"),
+          })}
+        </Text>
+        <Text style={styles.actionSubtitle}>
+          {i18n.t("labReport.criticalReportSubtitle", {
+            member: item.family_member_name,
+            date: item.report_date ? formatDate(item.report_date) : "",
+          })}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 type PendingItem =
   | { type: "test"; data: PendingTestAction }
   | { type: "referral"; data: PendingReferralAction }
-  | { type: "followup"; data: UpcomingFollowup };
+  | { type: "followup"; data: UpcomingFollowup }
+  | { type: "criticalLab"; data: CriticalLabReportAction };
 
 function PendingActionsSection() {
   const { data, isLoading } = useGetPendingActions();
@@ -207,6 +244,9 @@ function PendingActionsSection() {
   if (!data) return null;
 
   const items: PendingItem[] = [
+    ...(data.critical_lab_reports ?? []).map(
+      (c) => ({ type: "criticalLab" as const, data: c })
+    ),
     ...data.pending_tests.map(
       (t) => ({ type: "test" as const, data: t })
     ),
@@ -242,6 +282,8 @@ function PendingActionsSection() {
           {displayItems.map((item, index) => {
             const key = `${item.type}-${item.data.id}`;
             switch (item.type) {
+              case "criticalLab":
+                return <CriticalLabReportCard key={key} item={item.data} />;
               case "test":
                 return <PendingTestCard key={key} item={item.data} />;
               case "referral":
@@ -542,6 +584,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
+  },
+  criticalCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.error,
   },
   actionIconWrap: {
     width: 40,

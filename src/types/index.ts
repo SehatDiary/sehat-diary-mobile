@@ -115,11 +115,30 @@ export interface UpcomingFollowup {
   health_session_id: number;
 }
 
+export interface CriticalLabReportAction {
+  id: number;
+  lab_name: string | null;
+  report_date: string | null;
+  family_member_id: number;
+  family_member_name: string;
+  health_session_id: number;
+}
+
 export interface PendingActionsResponse {
   pending_tests: PendingTestAction[];
   pending_referrals: PendingReferralAction[];
   upcoming_followups: UpcomingFollowup[];
+  critical_lab_reports: CriticalLabReportAction[];
   total_count: number;
+}
+
+export interface PatientCriticalLabReport {
+  id: number;
+  lab_name: string | null;
+  report_date: string | null;
+  hindi_summary: string | null;
+  health_session_id: number;
+  created_at: string;
 }
 
 export interface ConfirmPrescriptionResult {
@@ -161,6 +180,10 @@ export interface LabReport {
   image_urls: string[];
   pdf_url: string | null;
   results: Record<string, unknown> | null;
+  lab_name: string | null;
+  report_type: string | null;
+  report_date: string | null;
+  has_critical_findings: boolean;
   created_at: string;
 }
 
