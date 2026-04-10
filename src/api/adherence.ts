@@ -29,6 +29,15 @@ export const markSnoozed = async (
   return data.adherence_log;
 };
 
+export const getMemberAdherence = async (
+  familyMemberId: number
+): Promise<TodayMedicines> => {
+  const { data } = await client.get(
+    `/family_members/${familyMemberId}/adherence/today`
+  );
+  return data;
+};
+
 export const getCriticalLabReports = async (): Promise<
   PatientCriticalLabReport[]
 > => {

@@ -17,6 +17,7 @@ export default {
     evening: "Evening",
     night: "Night",
     noMedicines: "No medicines for today",
+    missed: "Missed",
   },
   dashboard: {
     title: "Family",

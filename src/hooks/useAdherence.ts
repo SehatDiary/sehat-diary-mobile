@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getTodaysMedicines,
+  getMemberAdherence,
   markTaken,
   markSnoozed,
   getCriticalLabReports,
@@ -54,6 +55,13 @@ export const useMarkSnoozed = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todaysMedicines"] });
     },
+  });
+};
+
+export const useGetMemberAdherence = (familyMemberId: number) => {
+  return useQuery({
+    queryKey: ["memberAdherence", familyMemberId],
+    queryFn: () => getMemberAdherence(familyMemberId),
   });
 };
 

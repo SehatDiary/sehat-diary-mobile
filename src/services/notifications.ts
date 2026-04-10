@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import { Platform, Alert } from "react-native";
 import { updateFcmToken } from "../api/auth";
 import { markTaken } from "../api/adherence";
+import { navigate } from "../navigation/navigationRef";
 
 // Show notifications when app is in foreground
 Notifications.setNotificationHandler({
@@ -66,6 +67,52 @@ function isMedicineReminder(
   return data.type === "medicine_reminder" && !!data.adherence_log_id;
 }
 
+export interface CaregiverAlertData {
+  type: "caregiver_alert";
+  adherence_log_id: string;
+  member_name: string;
+  medicine_name: string;
+  family_member_id: string;
+}
+
+function isCaregiverAlert(data: Record<string, unknown>): boolean {
+  return data.type === "caregiver_alert" && !!data.adherence_log_id;
+}
+
+export async function presentCaregiverAlert(
+  data: CaregiverAlertData
+): Promise<void> {
+  const identifier = `caregiver-alert-${data.adherence_log_id}`;
+
+  // Dismiss existing notification for same dose
+  await Notifications.dismissNotificationAsync(identifier).catch(() => {});
+
+  await Notifications.scheduleNotificationAsync({
+    identifier,
+    content: {
+      title: "\u0926\u0935\u093E\u0908 \u091B\u0942\u091F \u0917\u0908",
+      body: `${data.member_name} \u0928\u0947 ${data.medicine_name} \u0928\u0939\u0940\u0902 \u0932\u0940`,
+      data: data as unknown as Record<string, unknown>,
+      ...(Platform.OS === "android" && {
+        channelId: "medicine-reminders",
+      }),
+    },
+    trigger: null,
+  });
+}
+
+function handleCaregiverAlertTap(data: Record<string, unknown>): void {
+  const memberId = parseInt(String(data.family_member_id), 10);
+  const memberName = String(data.member_name ?? "");
+  const adherenceLogId = parseInt(String(data.adherence_log_id), 10);
+
+  navigate("MemberAdherence", {
+    memberId,
+    memberName,
+    highlightAdherenceLogId: adherenceLogId,
+  });
+}
+
 export async function handleMarkTaken(adherenceLogId: number): Promise<boolean> {
   try {
     await markTaken(adherenceLogId);
@@ -119,6 +166,8 @@ export function setupNotificationListeners(
       const data = notification.request.content.data as Record<string, unknown>;
       if (isMedicineReminder(data)) {
         presentMedicineReminder(data as unknown as MedicineReminderData);
+      } else if (isCaregiverAlert(data)) {
+        presentCaregiverAlert(data as unknown as CaregiverAlertData);
       }
     }
   );
@@ -130,6 +179,14 @@ export function setupNotificationListeners(
         string,
         unknown
       >;
+
+      if (isCaregiverAlert(data)) {
+        handleCaregiverAlertTap(data);
+        await Notifications.dismissNotificationAsync(
+          response.notification.request.identifier
+        ).catch(() => {});
+        return;
+      }
 
       if (!isMedicineReminder(data)) return;
 

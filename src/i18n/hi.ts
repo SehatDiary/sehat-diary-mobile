@@ -17,6 +17,7 @@ export default {
     evening: "\u0936\u093E\u092E",
     night: "\u0930\u093E\u0924",
     noMedicines: "\u0906\u091C \u0915\u094B\u0908 \u0926\u0935\u093E\u0908 \u0928\u0939\u0940\u0902",
+    missed: "\u091B\u0942\u091F \u0917\u0908",
   },
   dashboard: {
     title: "\u092A\u0930\u093F\u0935\u093E\u0930",
