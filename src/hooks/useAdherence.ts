@@ -61,5 +61,6 @@ export const useGetCriticalLabReports = () => {
   return useQuery({
     queryKey: ["criticalLabReports"],
     queryFn: getCriticalLabReports,
+    retry: 1,
   });
 };

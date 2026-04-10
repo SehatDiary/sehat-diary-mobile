@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   uploadLabReport,
   getAnalysisStatus,
@@ -57,12 +58,35 @@ export const useGetLabReport = (
 
 export const useGetLabReports = (
   familyMemberId: number,
-  healthSessionId: number,
-  refetchInterval?: number
+  healthSessionId: number
 ) => {
   return useQuery({
     queryKey: ["labReports", familyMemberId, healthSessionId],
     queryFn: () => getLabReports(familyMemberId, healthSessionId),
-    refetchInterval: refetchInterval ?? false,
   });
+};
+
+export const useAutoRefreshLabReports = (
+  familyMemberId: number,
+  healthSessionId: number,
+  enabled: boolean
+) => {
+  const queryClient = useQueryClient();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (enabled) {
+      intervalRef.current = setInterval(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["labReports", familyMemberId, healthSessionId],
+        });
+      }, 5000);
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [enabled, familyMemberId, healthSessionId, queryClient]);
 };

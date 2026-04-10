@@ -13,7 +13,10 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useGetHealthSession } from "../../hooks/useFamilyMembers";
-import { useGetLabReports } from "../../hooks/useLabReports";
+import {
+  useGetLabReports,
+  useAutoRefreshLabReports,
+} from "../../hooks/useLabReports";
 import {
   useMarkTestCompleted,
   useMarkReferralVisited,
@@ -437,13 +440,8 @@ function LabReportsSection({
     (r) => r.status === "analyzing" || r.status === "uploading"
   );
 
-  // Auto-refresh when reports are analyzing — the hook uses refetchInterval
-  // We re-fetch via a separate hook call with a 5s interval when needed
-  useGetLabReports(
-    memberId,
-    sessionId,
-    hasAnalyzing ? 5000 : undefined
-  );
+  // Auto-refresh every 5s when any report is still analyzing
+  useAutoRefreshLabReports(memberId, sessionId, hasAnalyzing ?? false);
 
   if (!labReports || labReports.length === 0) {
     if (!isActive) return null;
