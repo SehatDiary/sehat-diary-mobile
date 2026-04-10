@@ -22,5 +22,5 @@ export const FONT_SIZES = {
 };
 
 export const API_BASE = __DEV__
-  ? "http://localhost:3000/api/v1"
+  ? "http://192.168.188.55:3000/api/v1"
   : "https://sehatdiary-production.up.railway.app/api/v1";
