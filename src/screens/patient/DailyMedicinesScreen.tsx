@@ -93,6 +93,13 @@ function ProgressRing({ pct }: { pct: number }) {
   );
 }
 
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString("hi-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function MedicineCard({
   log,
   onMarkTaken,
@@ -109,6 +116,17 @@ function MedicineCard({
         )}
         {log.dosage && (
           <Text style={styles.dosage}>{log.dosage}</Text>
+        )}
+        {log.taken && log.acknowledged_at && (
+          <Text style={styles.acknowledgedText}>
+            {i18n.t("medicines.confirmedViaNotification")} {"\u2022"}{" "}
+            {formatTime(log.acknowledged_at)}
+          </Text>
+        )}
+        {!log.taken && (log.reminder_count ?? 0) > 0 && (
+          <Text style={styles.reminderCountText}>
+            {i18n.t("medicines.reminderSent", { count: log.reminder_count })}
+          </Text>
         )}
       </View>
       {log.taken ? (
@@ -368,6 +386,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  acknowledgedText: {
+    fontSize: 13,
+    color: COLORS.success,
+    marginTop: 4,
+  },
+  reminderCountText: {
+    fontSize: 13,
+    color: COLORS.warning,
+    marginTop: 4,
   },
   takeButton: {
     backgroundColor: COLORS.success,
