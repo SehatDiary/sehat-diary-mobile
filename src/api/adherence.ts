@@ -32,6 +32,11 @@ export const markSnoozed = async (
 export const getCriticalLabReports = async (): Promise<
   PatientCriticalLabReport[]
 > => {
-  const { data } = await client.get("/adherence/critical_lab_reports");
-  return data.critical_lab_reports;
+  try {
+    const { data } = await client.get("/adherence/critical_lab_reports");
+    return data.critical_lab_reports;
+  } catch {
+    // Endpoint may not exist yet — return empty gracefully
+    return [];
+  }
 };

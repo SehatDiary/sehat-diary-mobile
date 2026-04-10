@@ -68,5 +68,8 @@ export const createHealthSession = async (
 
 export const getPendingActions = async (): Promise<PendingActionsResponse> => {
   const { data } = await client.get("/pending_actions");
-  return data;
+  return {
+    ...data,
+    critical_lab_reports: data.critical_lab_reports ?? [],
+  };
 };
