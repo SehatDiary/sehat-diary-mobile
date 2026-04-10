@@ -54,6 +54,12 @@
         {
           "cameraPermission": "Sehat Diary needs camera access to scan prescriptions"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
       ]
     ],
     "extra": {
