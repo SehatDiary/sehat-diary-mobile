@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Animated,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useGetHealthSession } from "../../hooks/useFamilyMembers";
+import { useGetLabReports } from "../../hooks/useLabReports";
 import {
   useMarkTestCompleted,
   useMarkReferralVisited,
@@ -24,6 +26,7 @@ import {
   PrescribedTest,
   Referral,
   VisitInstruction,
+  LabReport,
 } from "../../types";
 import i18n from "../../i18n";
 
@@ -307,6 +310,191 @@ function DoctorAdviceSection({
   );
 }
 
+function PulsingBadge({ label }: { label: string }) {
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={[styles.statusBadge, { backgroundColor: COLORS.warning, opacity }]}
+    >
+      <Text style={styles.statusText}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+const LAB_REPORT_STATUS_COLORS: Record<LabReport["status"], string> = {
+  uploading: COLORS.warning,
+  analyzing: COLORS.warning,
+  completed: COLORS.success,
+  failed: COLORS.error,
+};
+
+function LabReportCard({
+  report,
+  memberId,
+  sessionId,
+}: {
+  report: LabReport;
+  memberId: number;
+  sessionId: number;
+}) {
+  const navigation = useNavigation<Nav>();
+  const isAnalyzing =
+    report.status === "analyzing" || report.status === "uploading";
+
+  const statusLabel =
+    isAnalyzing
+      ? i18n.t("labReport.analyzingStatus")
+      : report.status === "completed"
+        ? i18n.t("labReport.readyStatus")
+        : i18n.t("labReport.failedStatus");
+
+  return (
+    <TouchableOpacity
+      style={styles.labReportCard}
+      activeOpacity={0.7}
+      disabled={report.status !== "completed"}
+      onPress={() =>
+        navigation.navigate("LabReportResult", {
+          memberId,
+          sessionId,
+          reportId: report.id,
+        })
+      }
+    >
+      <View style={styles.labReportRow}>
+        <Text style={styles.labReportIcon}>{"\u{1F52C}"}</Text>
+        <View style={styles.labReportInfo}>
+          <Text style={styles.labReportName}>
+            {report.lab_name ?? i18n.t("labReport.title")}
+          </Text>
+          {report.report_date && (
+            <Text style={styles.labReportDate}>
+              {formatDate(report.report_date)}
+            </Text>
+          )}
+          <Text style={styles.labReportType}>
+            {report.report_type ?? i18n.t("labReport.reportType")}
+          </Text>
+        </View>
+        {isAnalyzing ? (
+          <PulsingBadge label={statusLabel} />
+        ) : (
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: LAB_REPORT_STATUS_COLORS[report.status] },
+            ]}
+          >
+            <Text style={styles.statusText}>{statusLabel}</Text>
+          </View>
+        )}
+      </View>
+      {report.has_critical_findings && report.status === "completed" && (
+        <View style={styles.criticalRow}>
+          <View style={styles.criticalDot} />
+          <Text style={styles.criticalText}>
+            {i18n.t("labReport.criticalFindings")}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function LabReportsSection({
+  memberId,
+  sessionId,
+  isActive,
+}: {
+  memberId: number;
+  sessionId: number;
+  isActive: boolean;
+}) {
+  const navigation = useNavigation<Nav>();
+  const { data: labReports } = useGetLabReports(memberId, sessionId);
+
+  const hasAnalyzing = labReports?.some(
+    (r) => r.status === "analyzing" || r.status === "uploading"
+  );
+
+  // Auto-refresh when reports are analyzing — the hook uses refetchInterval
+  // We re-fetch via a separate hook call with a 5s interval when needed
+  useGetLabReports(
+    memberId,
+    sessionId,
+    hasAnalyzing ? 5000 : undefined
+  );
+
+  if (!labReports || labReports.length === 0) {
+    if (!isActive) return null;
+    return (
+      <View style={styles.labReportsSection}>
+        <Text style={styles.sectionHeading}>
+          {i18n.t("labReport.labReports")}
+        </Text>
+        <TouchableOpacity
+          style={styles.addLabReportButton}
+          onPress={() =>
+            navigation.navigate("UploadLabReport", { memberId, sessionId })
+          }
+        >
+          <Text style={styles.addLabReportText}>
+            {"\u{1F52C}"} {i18n.t("labReport.addLabReport")}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.labReportsSection}>
+      <Text style={styles.sectionHeading}>
+        {i18n.t("labReport.labReports")}
+      </Text>
+      {labReports.map((report) => (
+        <LabReportCard
+          key={report.id}
+          report={report}
+          memberId={memberId}
+          sessionId={sessionId}
+        />
+      ))}
+      {isActive && (
+        <TouchableOpacity
+          style={styles.addLabReportButton}
+          onPress={() =>
+            navigation.navigate("UploadLabReport", { memberId, sessionId })
+          }
+        >
+          <Text style={styles.addLabReportText}>
+            {"\u{1F52C}"} {i18n.t("labReport.addLabReport")}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 export default function SessionDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -391,6 +579,12 @@ export default function SessionDetailScreen() {
             <PrescriptionSection key={p.id} prescription={p} />
           ))
         )}
+
+        <LabReportsSection
+          memberId={memberId}
+          sessionId={sessionId}
+          isActive={session?.status === "active"}
+        />
       </ScrollView>
 
       {session?.status === "active" && (
@@ -701,6 +895,80 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 24,
   },
+  // Lab reports section
+  labReportsSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  labReportCard: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  labReportRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  labReportIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  labReportInfo: {
+    flex: 1,
+  },
+  labReportName: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "bold",
+    color: COLORS.primaryDark,
+  },
+  labReportDate: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  labReportType: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginTop: 1,
+  },
+  criticalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
+  },
+  criticalDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.error,
+    marginRight: 6,
+  },
+  criticalText: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.error,
+    fontWeight: "600",
+  },
+  addLabReportButton: {
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  addLabReportText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+  },
+
   emptySection: {
     alignItems: "center",
     paddingVertical: 40,

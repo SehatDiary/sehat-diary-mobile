@@ -1,5 +1,5 @@
 import client from "./client";
-import { AdherenceLog } from "../types";
+import { AdherenceLog, PatientCriticalLabReport } from "../types";
 
 export interface TodayMedicines {
   morning: AdherenceLog[];
@@ -27,4 +27,11 @@ export const markSnoozed = async (
 ): Promise<AdherenceLog> => {
   const { data } = await client.patch(`/adherence/${adherenceLogId}/snooze`);
   return data.adherence_log;
+};
+
+export const getCriticalLabReports = async (): Promise<
+  PatientCriticalLabReport[]
+> => {
+  const { data } = await client.get("/adherence/critical_lab_reports");
+  return data.critical_lab_reports;
 };

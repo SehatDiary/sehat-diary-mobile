@@ -3,6 +3,7 @@ import {
   getTodaysMedicines,
   markTaken,
   markSnoozed,
+  getCriticalLabReports,
   TodayMedicines,
 } from "../api/adherence";
 
@@ -53,5 +54,12 @@ export const useMarkSnoozed = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todaysMedicines"] });
     },
+  });
+};
+
+export const useGetCriticalLabReports = () => {
+  return useQuery({
+    queryKey: ["criticalLabReports"],
+    queryFn: getCriticalLabReports,
   });
 };

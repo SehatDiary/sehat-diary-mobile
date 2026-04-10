@@ -57,10 +57,12 @@ export const useGetLabReport = (
 
 export const useGetLabReports = (
   familyMemberId: number,
-  healthSessionId: number
+  healthSessionId: number,
+  refetchInterval?: number
 ) => {
   return useQuery({
     queryKey: ["labReports", familyMemberId, healthSessionId],
     queryFn: () => getLabReports(familyMemberId, healthSessionId),
+    refetchInterval: refetchInterval ?? false,
   });
 };

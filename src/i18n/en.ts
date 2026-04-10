@@ -190,6 +190,22 @@ export default {
     value: "Value",
     parameter: "Parameter",
     copiedToClipboard: "Report summary copied!",
+    // Session detail lab reports section
+    labReports: "Lab Reports",
+    reportType: "CBC + Biochemistry",
+    analyzingStatus: "Analyzing...",
+    readyStatus: "Ready",
+    failedStatus: "Failed",
+    criticalFindings: "Critical findings",
+    addLabReport: "Add Lab Report",
+    // Dashboard critical lab report card
+    criticalReportTitle: "Critical findings in %{lab} report",
+    criticalReportSubtitle: "For %{member} \u2014 %{date}",
+    // Patient Hindi card
+    patientCriticalTitle:
+      "\u0906\u092A\u0915\u0940 \u0930\u093F\u092A\u094B\u0930\u094D\u091F \u092E\u0947\u0902 \u0915\u0941\u091B \u091C\u093C\u0930\u0942\u0930\u0940 \u092C\u093E\u0924 \u0939\u0948",
+    patientCriticalSubtitle:
+      "Rahul \u0915\u094B \u092C\u0924\u093E\u092F\u093E \u0917\u092F\u093E \u0939\u0948",
   },
   common: {
     loading: "Loading...",

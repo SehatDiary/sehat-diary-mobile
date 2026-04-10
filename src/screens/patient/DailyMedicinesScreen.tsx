@@ -10,8 +10,12 @@ import {
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { COLORS } from "../../constants";
-import { useGetTodaysMedicines, useMarkTaken } from "../../hooks/useAdherence";
-import { AdherenceLog } from "../../types";
+import {
+  useGetTodaysMedicines,
+  useMarkTaken,
+  useGetCriticalLabReports,
+} from "../../hooks/useAdherence";
+import { AdherenceLog, PatientCriticalLabReport } from "../../types";
 import { TodayMedicines } from "../../api/adherence";
 import i18n from "../../i18n";
 
@@ -124,9 +128,38 @@ function MedicineCard({
   );
 }
 
+function CriticalLabAlertCard({
+  report,
+}: {
+  report: PatientCriticalLabReport;
+}) {
+  const [showSummary, setShowSummary] = React.useState(false);
+
+  return (
+    <TouchableOpacity
+      style={styles.criticalLabCard}
+      activeOpacity={0.7}
+      onPress={() => setShowSummary(!showSummary)}
+    >
+      <Text style={styles.criticalLabTitle}>
+        {i18n.t("labReport.patientCriticalTitle")}
+      </Text>
+      <Text style={styles.criticalLabSubtitle}>
+        {i18n.t("labReport.patientCriticalSubtitle")}
+      </Text>
+      {showSummary && report.hindi_summary && (
+        <View style={styles.hindiSummaryBox}>
+          <Text style={styles.hindiSummaryText}>{report.hindi_summary}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 export default function DailyMedicinesScreen() {
   const { data, isLoading, isError, refetch } = useGetTodaysMedicines();
   const markTaken = useMarkTaken();
+  const { data: criticalReports } = useGetCriticalLabReports();
 
   const handleMarkTaken = (id: number) => {
     markTaken.mutate(id);
@@ -156,6 +189,13 @@ export default function DailyMedicinesScreen() {
   const progress = data ? getProgress(data) : { total: 0, taken: 0, pct: 0 };
   const isEmpty = progress.total === 0;
 
+  // Filter to recent reports (< 7 days) with critical findings
+  const recentCriticalReports = (criticalReports ?? []).filter((r) => {
+    const created = new Date(r.created_at).getTime();
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return created >= sevenDaysAgo;
+  });
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -175,6 +215,9 @@ export default function DailyMedicinesScreen() {
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>💊</Text>
           <Text style={styles.emptyText}>{i18n.t("medicines.noMedicines")}</Text>
+          {recentCriticalReports.map((r) => (
+            <CriticalLabAlertCard key={r.id} report={r} />
+          ))}
         </View>
       ) : (
         <SectionList
@@ -191,6 +234,15 @@ export default function DailyMedicinesScreen() {
           )}
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
+          ListFooterComponent={
+            recentCriticalReports.length > 0 ? (
+              <View style={styles.criticalLabSection}>
+                {recentCriticalReports.map((r) => (
+                  <CriticalLabAlertCard key={r.id} report={r} />
+                ))}
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={false}
@@ -376,6 +428,46 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.text,
     textAlign: "center",
+  },
+  criticalLabSection: {
+    marginTop: 16,
+  },
+  criticalLabCard: {
+    backgroundColor: "#FFF3E0",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    marginHorizontal: 0,
+    borderWidth: 1,
+    borderColor: "#FFB74D",
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.error,
+    marginTop: 12,
+  },
+  criticalLabTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.text,
+    lineHeight: 28,
+  },
+  criticalLabSubtitle: {
+    fontSize: 18,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    lineHeight: 26,
+  },
+  hindiSummaryBox: {
+    marginTop: 12,
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.warning,
+  },
+  hindiSummaryText: {
+    fontSize: 18,
+    color: COLORS.text,
+    lineHeight: 28,
   },
   alertButton: {
     position: "absolute",
