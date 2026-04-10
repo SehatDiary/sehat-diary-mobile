@@ -245,4 +245,9 @@ export type CaregiverStackParamList = {
     sessionId: number;
     doctorVisit: DoctorVisit;
   };
+  MemberAdherence: {
+    memberId: number;
+    memberName: string;
+    highlightAdherenceLogId?: number;
+  };
 };
