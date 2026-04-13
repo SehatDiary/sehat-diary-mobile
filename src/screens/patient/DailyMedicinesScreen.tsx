@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import Svg, { Circle } from "react-native-svg";
 import { COLORS } from "../../constants";
 import {
@@ -15,9 +17,11 @@ import {
   useMarkTaken,
   useGetCriticalLabReports,
 } from "../../hooks/useAdherence";
-import { AdherenceLog, PatientCriticalLabReport } from "../../types";
+import { AdherenceLog, PatientCriticalLabReport, PatientStackParamList } from "../../types";
 import { TodayMedicines } from "../../api/adherence";
 import i18n from "../../i18n";
+
+type Nav = StackNavigationProp<PatientStackParamList, "DailyMedicines">;
 
 const TIME_SLOTS = ["morning", "afternoon", "evening", "night"] as const;
 const SLOT_LABELS: Record<string, () => string> = {
@@ -175,6 +179,7 @@ function CriticalLabAlertCard({
 }
 
 export default function DailyMedicinesScreen() {
+  const navigation = useNavigation<Nav>();
   const { data, isLoading, isError, refetch } = useGetTodaysMedicines();
   const markTaken = useMarkTaken();
   const { data: criticalReports } = useGetCriticalLabReports();
@@ -226,7 +231,18 @@ export default function DailyMedicinesScreen() {
             </Text>
           )}
         </View>
-        {!isEmpty && <ProgressRing pct={progress.pct} />}
+        <View style={styles.headerRight}>
+          {!isEmpty && <ProgressRing pct={progress.pct} />}
+          <TouchableOpacity
+            style={styles.caregiversLink}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate("ManageCaregivers")}
+          >
+            <Text style={styles.caregiversLinkText}>
+              {i18n.t("caregivers.myCaregivers")}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isEmpty ? (
@@ -306,6 +322,21 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  headerRight: {
+    alignItems: "center",
+  },
+  caregiversLink: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 8,
+  },
+  caregiversLinkText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: "600",
   },
   title: {
     fontSize: 28,

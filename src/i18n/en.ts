@@ -210,6 +210,48 @@ export default {
     patientCriticalSubtitle:
       "Rahul \u0915\u094B \u092C\u0924\u093E\u092F\u093E \u0917\u092F\u093E \u0939\u0948",
   },
+  caregivers: {
+    title: "My Caregivers",
+    titleHi: "मेरे Caregivers",
+    currentCaregivers: "Current Caregivers",
+    pendingInvites: "Pending Invites Sent",
+    statusActive: "Active",
+    statusPending: "Invite Sent",
+    waitingAcceptance: "Waiting for acceptance...",
+    expiresIn: "Expires in %{days} days",
+    removeCaregiverMenu: "Remove Caregiver",
+    cancelInviteMenu: "Cancel Invite",
+    removeConfirmTitle: "Remove Caregiver",
+    removeConfirmMessage:
+      "Remove %{name} as caregiver? They will no longer see your health data.",
+    removeConfirmMessageHi:
+      "%{name} को caregiver से हटाएं? वे अब आपका health data नहीं देख पाएंगे।",
+    cancelInviteConfirmTitle: "Cancel Invite",
+    cancelInviteConfirmMessage:
+      "Cancel invite to this person?",
+    emptyTitle: "Add a family member or caregiver to help manage your health",
+    emptyTitleHi:
+      "अपने परिवार को जोड़ें ताकि वे आपकी सेहत में मदद कर सकें",
+    addCaregiver: "Add Caregiver",
+    addCaregiverTitle: "Add Caregiver",
+    enterPhone: "Enter phone number",
+    search: "Search",
+    searching: "Searching...",
+    personFound: "This person is on Sehat Diary",
+    personFoundHi: "यह व्यक्ति Sehat Diary पर है",
+    personNotFound: "This number is not registered on Sehat Diary yet",
+    personNotFoundHi:
+      "यह नंबर अभी Sehat Diary पर registered नहीं है",
+    alreadyConnected: "This person is already your caregiver",
+    sendInvite: "Send Invite",
+    sendingInvite: "Sending...",
+    shareAppLink: "Share App Link",
+    inviteSent: "Invite sent! Ask them to open Sehat Diary and accept.",
+    inviteSentHi:
+      "Invite भेज दी! उन्हें Sehat Diary खोलकर accept करने को कहें।",
+    done: "Done",
+    myCaregivers: "My Caregivers",
+  },
   common: {
     loading: "Loading...",
     error: "Something went wrong",
