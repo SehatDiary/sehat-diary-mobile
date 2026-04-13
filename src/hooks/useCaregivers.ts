@@ -4,6 +4,10 @@ import {
   lookupPhone,
   sendInvite,
   removeConnection,
+  getPendingInvites,
+  acceptInvite,
+  declineInvite,
+  getMyPatients,
 } from "../api/caregivers";
 
 export const useGetMyCaregivers = () => {
@@ -36,5 +40,41 @@ export const useRemoveConnection = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["myCaregivers"] });
     },
+  });
+};
+
+export const useGetPendingInvites = () => {
+  return useQuery({
+    queryKey: ["pendingInvites"],
+    queryFn: getPendingInvites,
+  });
+};
+
+export const useAcceptInvite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: acceptInvite,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pendingInvites"] });
+      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+      queryClient.invalidateQueries({ queryKey: ["myPatients"] });
+    },
+  });
+};
+
+export const useDeclineInvite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: declineInvite,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pendingInvites"] });
+    },
+  });
+};
+
+export const useGetMyPatients = () => {
+  return useQuery({
+    queryKey: ["myPatients"],
+    queryFn: getMyPatients,
   });
 };

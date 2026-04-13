@@ -250,6 +250,31 @@ export default {
       "Invite भेज दी! उन्हें Sehat Diary खोलकर accept करने को कहें।",
     done: "Done",
     myCaregivers: "मेरे Caregivers",
+    // Invite inbox (caregiver side)
+    invitesTitle: "Caregiver Invites",
+    invitedBy:
+      "%{name} ने आपको अपना caregiver बनाने के लिए invite किया है",
+    invitedByHi:
+      "%{name} ने आपको अपना caregiver बनाने के लिए invite किया है",
+    whatItMeans:
+      "आप उनकी दवाइयाँ, रिपोर्ट और doctor visits देख पाएंगे।",
+    whatItMeansHi:
+      "आप उनकी दवाइयाँ, रिपोर्ट और doctor visits देख पाएंगे।",
+    accept: "Accept करें",
+    decline: "Decline करें",
+    accepting: "Accept हो रहा है...",
+    declineConfirmTitle: "Invite decline करें",
+    declineConfirmMessage:
+      "यह invite decline करें? आप %{name} से दोबारा invite भेजने को कह सकते हैं।",
+    noInvites: "कोई pending invite नहीं है",
+    noInvitesHi: "कोई pending invite नहीं है",
+    expired: "Expire हो गई",
+    inviteAccepted: "%{name} ने आपकी invite accept कर ली!",
+    inviteDeclined: "Invite decline कर दी गई",
+    pendingInvitesBanner: "%{count} caregiver invite का जवाब बाकी है",
+    pendingInvitesBannerHi: "%{count} caregiver invite का जवाब बाकी है",
+    patientFamily: "%{name} का परिवार",
+    patientFamilyHi: "%{name} का परिवार",
   },
   common: {
     loading: "लोड हो रहा है...",

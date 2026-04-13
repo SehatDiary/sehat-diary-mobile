@@ -16,6 +16,10 @@ import {
   useGetPendingActions,
 } from "../../hooks/useFamilyMembers";
 import {
+  useGetPendingInvites,
+  useGetMyPatients,
+} from "../../hooks/useCaregivers";
+import {
   FamilyMember,
   CaregiverStackParamList,
   PendingTestAction,
@@ -224,6 +228,29 @@ function CriticalLabReportCard({ item }: { item: CriticalLabReportAction }) {
   );
 }
 
+function InviteBanner() {
+  const navigation = useNavigation<Nav>();
+  const { data: invites } = useGetPendingInvites();
+  const count = (invites ?? []).length;
+
+  if (count === 0) return null;
+
+  return (
+    <TouchableOpacity
+      style={styles.inviteBanner}
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate("PendingInvites")}
+    >
+      <Text style={styles.inviteBannerText}>
+        {i18n.t("caregivers.pendingInvitesBanner", { count })}
+      </Text>
+      <Text style={styles.inviteBannerTextHi}>
+        {i18n.t("caregivers.pendingInvitesBannerHi", { count })}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 type PendingItem =
   | { type: "test"; data: PendingTestAction }
   | { type: "referral"; data: PendingReferralAction }
@@ -306,6 +333,7 @@ function PendingActionsSection() {
 export default function DashboardScreen() {
   const navigation = useNavigation<Nav>();
   const { data: members, isLoading, isError, refetch } = useGetFamilyMembers();
+  const { data: myPatients } = useGetMyPatients();
 
   if (isLoading) {
     return (
@@ -350,28 +378,41 @@ export default function DashboardScreen() {
     );
   }
 
+  const patientSections = (myPatients ?? []).map((patient) => ({
+    key: `patient-${patient.id}`,
+    title: i18n.t("caregivers.patientFamily", { name: patient.patient_name }),
+    data: patient.family_members,
+  }));
+
   const sections = [
-    {
-      key: "members",
-      data: members,
-    },
+    { key: "members", title: "", data: members },
+    ...patientSections,
   ];
+
+  const totalMembers =
+    members.length +
+    patientSections.reduce((sum, s) => sum + s.data.length, 0);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{i18n.t("dashboard.title")}</Text>
         <Text style={styles.memberCount}>
-          {members.length} {i18n.t("dashboard.members")}
+          {totalMembers} {i18n.t("dashboard.members")}
         </Text>
       </View>
 
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => <MemberCard member={item} />}
-        renderSectionHeader={() => null}
+        renderSectionHeader={({ section }) =>
+          section.title ? (
+            <Text style={styles.patientFamilyLabel}>{section.title}</Text>
+          ) : null
+        }
         contentContainerStyle={styles.list}
+        ListHeaderComponent={<InviteBanner />}
         ListFooterComponent={<PendingActionsSection />}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={refetch} tintColor={COLORS.primary} />
@@ -663,5 +704,31 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.small,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  inviteBanner: {
+    backgroundColor: "#FFF8E1",
+    borderWidth: 1,
+    borderColor: "#FFB74D",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+  },
+  inviteBannerText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+    color: "#E65100",
+  },
+  inviteBannerTextHi: {
+    fontSize: FONT_SIZES.small,
+    color: "#F57F17",
+    marginTop: 2,
+  },
+  patientFamilyLabel: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "bold",
+    color: COLORS.primaryDark,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
 });
