@@ -226,6 +226,26 @@ export interface LabReportResultData {
   created_at: string;
 }
 
+export interface CaregiverConnection {
+  id: number;
+  caregiver_id: number;
+  caregiver_name: string | null;
+  caregiver_phone_masked: string;
+  status: "accepted" | "pending";
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface PhoneLookupResult {
+  found: boolean;
+  already_connected: boolean;
+}
+
+export type PatientStackParamList = {
+  DailyMedicines: undefined;
+  ManageCaregivers: undefined;
+};
+
 export type CaregiverStackParamList = {
   Dashboard: undefined;
   AddFamilyMember: undefined;
