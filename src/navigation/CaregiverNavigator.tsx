@@ -10,6 +10,7 @@ import UploadLabReportScreen from "../screens/caregiver/UploadLabReportScreen";
 import LabReportResultScreen from "../screens/caregiver/LabReportResultScreen";
 import VisitConfirmedScreen from "../screens/caregiver/VisitConfirmedScreen";
 import MemberAdherenceScreen from "../screens/caregiver/MemberAdherenceScreen";
+import PendingInvitesScreen from "../screens/caregiver/PendingInvitesScreen";
 
 const Stack = createStackNavigator<CaregiverStackParamList>();
 
@@ -25,6 +26,7 @@ export default function CaregiverNavigator() {
       <Stack.Screen name="LabReportResult" component={LabReportResultScreen} />
       <Stack.Screen name="VisitConfirmed" component={VisitConfirmedScreen} />
       <Stack.Screen name="MemberAdherence" component={MemberAdherenceScreen} />
+      <Stack.Screen name="PendingInvites" component={PendingInvitesScreen} />
     </Stack.Navigator>
   );
 }

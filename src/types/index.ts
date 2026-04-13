@@ -246,7 +246,23 @@ export type PatientStackParamList = {
   ManageCaregivers: undefined;
 };
 
+export interface CaregiverInvite {
+  id: number;
+  patient_name: string;
+  patient_phone_masked: string;
+  status: "pending" | "accepted" | "declined" | "expired";
+  expires_at: string;
+  created_at: string;
+}
+
+export interface MyPatient {
+  id: number;
+  patient_name: string;
+  family_members: FamilyMember[];
+}
+
 export type CaregiverStackParamList = {
+  PendingInvites: undefined;
   Dashboard: undefined;
   AddFamilyMember: undefined;
   FamilyMember: { memberId: number };

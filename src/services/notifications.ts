@@ -79,6 +79,33 @@ function isCaregiverAlert(data: Record<string, unknown>): boolean {
   return data.type === "caregiver_alert" && !!data.adherence_log_id;
 }
 
+export interface CaregiverInviteNotifData {
+  type: "caregiver_invite";
+  invite_id: string;
+  patient_name: string;
+}
+
+export interface CaregiverAcceptedNotifData {
+  type: "caregiver_accepted";
+  caregiver_name: string;
+}
+
+export interface CaregiverDeclinedNotifData {
+  type: "caregiver_declined";
+}
+
+function isCaregiverInviteNotif(data: Record<string, unknown>): boolean {
+  return data.type === "caregiver_invite";
+}
+
+function isCaregiverAcceptedNotif(data: Record<string, unknown>): boolean {
+  return data.type === "caregiver_accepted";
+}
+
+function isCaregiverDeclinedNotif(data: Record<string, unknown>): boolean {
+  return data.type === "caregiver_declined";
+}
+
 export async function presentCaregiverAlert(
   data: CaregiverAlertData
 ): Promise<void> {
@@ -158,7 +185,8 @@ export async function setupNotificationCategories(): Promise<void> {
 }
 
 export function setupNotificationListeners(
-  onMarkTakenSuccess?: () => void
+  onMarkTakenSuccess?: () => void,
+  onCaregiverInviteEvent?: () => void
 ): () => void {
   // Handle notification received while app is in foreground
   const receivedSub = Notifications.addNotificationReceivedListener(
@@ -168,7 +196,15 @@ export function setupNotificationListeners(
         presentMedicineReminder(data as unknown as MedicineReminderData);
       } else if (isCaregiverAlert(data)) {
         presentCaregiverAlert(data as unknown as CaregiverAlertData);
+      } else if (isCaregiverAcceptedNotif(data)) {
+        const name = String(data.caregiver_name ?? "");
+        Alert.alert("", `${name} accepted your invite!`);
+        onCaregiverInviteEvent?.();
+      } else if (isCaregiverDeclinedNotif(data)) {
+        Alert.alert("", "Invite was declined");
+        onCaregiverInviteEvent?.();
       }
+      // caregiver_invite foreground: the push notification banner is shown automatically
     }
   );
 
@@ -182,6 +218,14 @@ export function setupNotificationListeners(
 
       if (isCaregiverAlert(data)) {
         handleCaregiverAlertTap(data);
+        await Notifications.dismissNotificationAsync(
+          response.notification.request.identifier
+        ).catch(() => {});
+        return;
+      }
+
+      if (isCaregiverInviteNotif(data)) {
+        navigate("PendingInvites", {});
         await Notifications.dismissNotificationAsync(
           response.notification.request.identifier
         ).catch(() => {});
