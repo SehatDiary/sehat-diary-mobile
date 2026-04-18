@@ -1,10 +1,15 @@
 import client from "./client";
 import { AuthResponse, User } from "../types";
 
+export type SignupRole = "caregiver" | "patient";
+
 export const requestOtp = async (
-  phone_number: string
+  phone_number: string,
+  role?: SignupRole
 ): Promise<{ message: string; otp?: string }> => {
-  const { data } = await client.post("/auth/request_otp", { phone_number });
+  const body: Record<string, string> = { phone_number };
+  if (role) body.role = role;
+  const { data } = await client.post("/auth/request_otp", body);
   return data;
 };
 
