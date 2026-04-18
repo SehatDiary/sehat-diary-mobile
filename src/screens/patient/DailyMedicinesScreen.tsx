@@ -294,14 +294,6 @@ export default function DailyMedicinesScreen() {
         />
       )}
 
-      {/* Alert Family Button */}
-      {!isEmpty && (
-        <TouchableOpacity style={styles.alertButton} activeOpacity={0.8}>
-          <Text style={styles.alertButtonText}>
-            {i18n.t("reminders.alertFamily")}
-          </Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -542,25 +534,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: COLORS.text,
     lineHeight: 28,
-  },
-  alertButton: {
-    position: "absolute",
-    bottom: 32,
-    left: 20,
-    right: 20,
-    backgroundColor: COLORS.warning,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  alertButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.text,
   },
 });
