@@ -61,6 +61,7 @@ export default {
     completed: "Completed",
     prescriptions: "Prescriptions",
     startedOn: "Started",
+    viewAdherence: "View medicine adherence",
   },
   addMember: {
     title: "Add Family Member",
