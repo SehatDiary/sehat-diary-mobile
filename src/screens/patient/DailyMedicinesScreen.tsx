@@ -232,6 +232,13 @@ export default function DailyMedicinesScreen() {
           )}
         </View>
         <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate("Settings")}
+            accessibilityLabel={i18n.t("settings.title")}
+          >
+            <Text style={styles.settingsIcon}>⚙</Text>
+          </TouchableOpacity>
           {!isEmpty && <ProgressRing pct={progress.pct} />}
           <TouchableOpacity
             style={styles.caregiversLink}
@@ -325,6 +332,14 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     alignItems: "center",
+  },
+  settingsButton: {
+    padding: 8,
+    alignSelf: "flex-end",
+  },
+  settingsIcon: {
+    fontSize: 24,
+    color: COLORS.white,
   },
   caregiversLink: {
     marginTop: 8,

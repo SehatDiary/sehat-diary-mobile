@@ -289,4 +289,8 @@ export default {
     delete: "\u0939\u091F\u093E\u090F\u0902",
     confirm: "\u092A\u0941\u0937\u094D\u091F\u093F \u0915\u0930\u0947\u0902",
   },
+  settings: {
+    title: "\u0938\u0947\u091F\u093F\u0902\u0917\u094D\u0938",
+    language: "\u092D\u093E\u0937\u093E",
+  },
 };
