@@ -1,10 +1,21 @@
 import { useMutation } from "@tanstack/react-query";
-import { requestOtp, verifyOtp, logout as logoutApi } from "../api/auth";
+import {
+  requestOtp,
+  verifyOtp,
+  logout as logoutApi,
+  SignupRole,
+} from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 
 export const useRequestOtp = () => {
   return useMutation({
-    mutationFn: (phone_number: string) => requestOtp(phone_number),
+    mutationFn: ({
+      phone_number,
+      role,
+    }: {
+      phone_number: string;
+      role?: SignupRole;
+    }) => requestOtp(phone_number, role),
   });
 };
 

@@ -45,7 +45,7 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
 
   const handleResend = () => {
     setCountdown(30);
-    resendOtp.mutate(phone_number);
+    resendOtp.mutate({ phone_number });
   };
 
   return (

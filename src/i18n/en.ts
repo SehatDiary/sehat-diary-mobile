@@ -7,6 +7,9 @@ export default {
     resendOtp: "Resend OTP",
     invalidOtp: "Invalid OTP",
     tagline: "Your Health, Your Diary",
+    roleQuestion: "Tell us about yourself",
+    roleCaregiver: "I'm managing my family's health",
+    rolePatient: "I'm tracking my own health",
   },
   medicines: {
     title: "Today's Medicines",
