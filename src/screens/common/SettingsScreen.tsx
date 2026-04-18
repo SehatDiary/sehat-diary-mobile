@@ -1,14 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useLocaleStore, Locale } from "../../store/localeStore";
+import { useAuthStore } from "../../store/authStore";
+import { useLogout } from "../../hooks/useAuth";
 import i18n from "../../i18n";
 
 type LanguageOption = {
@@ -21,10 +26,50 @@ const LANGUAGES: LanguageOption[] = [
   { code: "hi", nativeLabel: "हिन्दी" },
 ];
 
+function roleLabelKey(role: string): string {
+  switch (role) {
+    case "super_admin":
+      return "settings.roleSuperAdmin";
+    case "caregiver":
+      return "settings.roleCaregiver";
+    case "patient":
+      return "settings.rolePatient";
+    case "doctor":
+      return "settings.roleDoctor";
+    default:
+      return "settings.roleCaregiver";
+  }
+}
+
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
+  const user = useAuthStore((s) => s.user);
+  const logout = useLogout();
+
+  const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    Notifications.getPermissionsAsync().then(({ status }) => {
+      setNotifGranted(status === "granted");
+    });
+  }, []);
+
+  const handleSignOut = () => {
+    Alert.alert(
+      i18n.t("settings.signOutConfirmTitle"),
+      i18n.t("settings.signOutConfirmMessage"),
+      [
+        { text: i18n.t("common.cancel"), style: "cancel" },
+        {
+          text: i18n.t("settings.signOut"),
+          style: "destructive",
+          onPress: () => logout.mutate(),
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -39,7 +84,42 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.sectionLabel}>{i18n.t("settings.language")}</Text>
+        {user && (
+          <>
+            <Text style={styles.sectionLabel}>
+              {i18n.t("settings.profile")}
+            </Text>
+            <View style={styles.card}>
+              <ProfileRow
+                label={i18n.t("settings.name")}
+                value={user.name ?? "—"}
+              />
+              <ProfileRow
+                label={i18n.t("settings.phone")}
+                value={user.phone_number}
+              />
+              <ProfileRow
+                label={i18n.t("settings.role")}
+                value={i18n.t(roleLabelKey(user.role))}
+              />
+              <ProfileRow
+                label={i18n.t("settings.notifications")}
+                value={
+                  notifGranted === null
+                    ? "—"
+                    : notifGranted
+                    ? i18n.t("settings.enabled")
+                    : i18n.t("settings.disabled")
+                }
+                isLast
+              />
+            </View>
+          </>
+        )}
+
+        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>
+          {i18n.t("settings.language")}
+        </Text>
 
         {LANGUAGES.map((lang) => {
           const selected = locale === lang.code;
@@ -64,7 +144,39 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           );
         })}
+
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={handleSignOut}
+          disabled={logout.isPending}
+          accessibilityRole="button"
+        >
+          {logout.isPending ? (
+            <ActivityIndicator color={COLORS.error} />
+          ) : (
+            <Text style={styles.signOutText}>
+              {i18n.t("settings.signOut")}
+            </Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
+    </View>
+  );
+}
+
+function ProfileRow({
+  label,
+  value,
+  isLast,
+}: {
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) {
+  return (
+    <View style={[styles.profileRow, !isLast && styles.profileRowBorder]}>
+      <Text style={styles.profileLabel}>{label}</Text>
+      <Text style={styles.profileValue}>{value}</Text>
     </View>
   );
 }
@@ -97,6 +209,7 @@ const styles = StyleSheet.create({
   },
   body: {
     padding: 16,
+    paddingBottom: 48,
   },
   sectionLabel: {
     fontSize: FONT_SIZES.small,
@@ -104,6 +217,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+  sectionLabelSpaced: {
+    marginTop: 24,
+  },
+  card: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    paddingHorizontal: 16,
+  },
+  profileRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+  },
+  profileRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+  },
+  profileLabel: {
+    fontSize: FONT_SIZES.medium,
+    color: COLORS.textSecondary,
+  },
+  profileValue: {
+    fontSize: FONT_SIZES.medium,
+    color: COLORS.text,
+    fontWeight: "600",
+    flexShrink: 1,
+    textAlign: "right",
+    marginLeft: 12,
   },
   option: {
     backgroundColor: COLORS.white,
@@ -132,5 +277,19 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.large,
     color: COLORS.primary,
     fontWeight: "bold",
+  },
+  signOutButton: {
+    marginTop: 32,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+  },
+  signOutText: {
+    fontSize: FONT_SIZES.large,
+    color: COLORS.error,
+    fontWeight: "600",
   },
 });
