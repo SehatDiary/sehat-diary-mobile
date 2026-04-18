@@ -33,12 +33,6 @@ type Nav = StackNavigationProp<CaregiverStackParamList, "Dashboard">;
 
 const MAX_PENDING_ITEMS = 5;
 
-function getAdherenceColor(pct: number) {
-  if (pct >= 80) return COLORS.success;
-  if (pct >= 50) return COLORS.warning;
-  return COLORS.error;
-}
-
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("hi-IN", {
     day: "numeric",
@@ -48,8 +42,6 @@ function formatDate(dateStr: string) {
 
 function MemberCard({ member }: { member: FamilyMember }) {
   const navigation = useNavigation<Nav>();
-  // TODO: replace with real adherence from API when available
-  const adherencePct = Math.floor(Math.random() * 40 + 60);
 
   return (
     <TouchableOpacity
@@ -66,9 +58,6 @@ function MemberCard({ member }: { member: FamilyMember }) {
         <View style={styles.cardInfo}>
           <Text style={styles.memberName}>{member.name}</Text>
           <Text style={styles.memberRelation}>{member.relation}</Text>
-        </View>
-        <View style={[styles.adherenceBadge, { backgroundColor: getAdherenceColor(adherencePct) }]}>
-          <Text style={styles.adherenceText}>{adherencePct}%</Text>
         </View>
       </View>
       {member.chronic_conditions.length > 0 && (
@@ -538,16 +527,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.small,
     color: COLORS.textSecondary,
     marginTop: 2,
-  },
-  adherenceBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  adherenceText: {
-    fontSize: FONT_SIZES.small,
-    fontWeight: "bold",
-    color: COLORS.white,
   },
   conditionsRow: {
     flexDirection: "row",
