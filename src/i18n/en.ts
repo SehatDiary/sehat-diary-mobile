@@ -294,5 +294,20 @@ export default {
   settings: {
     title: "Settings",
     language: "Language",
+    profile: "Profile",
+    name: "Name",
+    phone: "Phone",
+    role: "Role",
+    notifications: "Notifications",
+    enabled: "Enabled",
+    disabled: "Disabled",
+    signOut: "Sign out",
+    signOutConfirmTitle: "Sign out?",
+    signOutConfirmMessage:
+      "You will need your phone number to sign back in.",
+    roleCaregiver: "Caregiver",
+    rolePatient: "Patient",
+    roleSuperAdmin: "Admin",
+    roleDoctor: "Doctor",
   },
 };
