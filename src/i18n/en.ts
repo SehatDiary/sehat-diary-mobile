@@ -145,12 +145,6 @@ export default {
     extractionFailed: "Could not extract medicines",
     permissionRequired: "Camera permission is required",
   },
-  reminders: {
-    missed: "Medicine Missed",
-    timeToTake: "Time to take medicine",
-    reportIssue: "Having trouble?",
-    alertFamily: "Alert Family",
-  },
   labReport: {
     // Upload screen keys
     title: "Lab Report",
