@@ -180,6 +180,21 @@ export default function FamilyMemberScreen() {
         </View>
       )}
 
+      <TouchableOpacity
+        style={styles.adherenceButton}
+        activeOpacity={0.7}
+        onPress={() =>
+          navigation.navigate("MemberAdherence", {
+            memberId,
+            memberName: member.name,
+          })
+        }
+      >
+        <Text style={styles.adherenceButtonText}>
+          {i18n.t("familyMember.viewAdherence")}
+        </Text>
+      </TouchableOpacity>
+
       {/* Sessions Section */}
       <View style={styles.sessionsHeader}>
         <Text style={styles.sectionTitle}>
@@ -317,6 +332,21 @@ const styles = StyleSheet.create({
   conditionText: {
     fontSize: 12,
     color: COLORS.textSecondary,
+  },
+  adherenceButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingVertical: 14,
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    alignItems: "center",
+  },
+  adherenceButtonText: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
   },
   sessionsHeader: {
     flexDirection: "row",
