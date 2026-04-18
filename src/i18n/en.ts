@@ -291,4 +291,8 @@ export default {
     delete: "Delete",
     confirm: "Confirm",
   },
+  settings: {
+    title: "Settings",
+    language: "Language",
+  },
 };

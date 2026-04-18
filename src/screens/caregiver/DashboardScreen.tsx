@@ -359,10 +359,19 @@ export default function DashboardScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>{i18n.t("dashboard.title")}</Text>
-          <Text style={styles.memberCount}>
-            0 {i18n.t("dashboard.members")}
-          </Text>
+          <View style={styles.headerTextColumn}>
+            <Text style={styles.title}>{i18n.t("dashboard.title")}</Text>
+            <Text style={styles.memberCount}>
+              0 {i18n.t("dashboard.members")}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate("Settings")}
+            accessibilityLabel={i18n.t("settings.title")}
+          >
+            <Text style={styles.settingsIcon}>⚙</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.center}>
           <Text style={styles.emptyTitle}>{i18n.t("dashboard.noMembers")}</Text>
@@ -396,10 +405,19 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{i18n.t("dashboard.title")}</Text>
-        <Text style={styles.memberCount}>
-          {totalMembers} {i18n.t("dashboard.members")}
-        </Text>
+        <View style={styles.headerTextColumn}>
+          <Text style={styles.title}>{i18n.t("dashboard.title")}</Text>
+          <Text style={styles.memberCount}>
+            {totalMembers} {i18n.t("dashboard.members")}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate("Settings")}
+          accessibilityLabel={i18n.t("settings.title")}
+        >
+          <Text style={styles.settingsIcon}>⚙</Text>
+        </TouchableOpacity>
       </View>
 
       <SectionList
@@ -447,6 +465,20 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerTextColumn: {
+    flex: 1,
+  },
+  settingsButton: {
+    padding: 8,
+    marginLeft: 12,
+  },
+  settingsIcon: {
+    fontSize: 24,
+    color: COLORS.white,
   },
   title: {
     fontSize: FONT_SIZES.title,

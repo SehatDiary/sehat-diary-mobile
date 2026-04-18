@@ -244,6 +244,7 @@ export interface PhoneLookupResult {
 export type PatientStackParamList = {
   DailyMedicines: undefined;
   ManageCaregivers: undefined;
+  Settings: undefined;
 };
 
 export interface CaregiverInvite {
@@ -288,4 +289,5 @@ export type CaregiverStackParamList = {
     memberName: string;
     highlightAdherenceLogId?: number;
   };
+  Settings: undefined;
 };
