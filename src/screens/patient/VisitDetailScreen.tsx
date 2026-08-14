@@ -57,7 +57,9 @@ export default function VisitDetailScreen() {
   }
 
   const summary = hindiFirst(visit.summary_hi, visit.summary_en);
-  const diagnosis = hindiFirst(null, visit.diagnosis);
+  // The API carries no Hindi diagnosis field — the Hindi rendering of the
+  // condition lives inside summary_hi above.
+  const diagnosis = visit.diagnosis;
 
   return (
     <View style={styles.container}>
