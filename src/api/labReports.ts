@@ -1,5 +1,10 @@
 import client from "./client";
-import { LabReport, LabReportAnalysisStatus, LabReportResultData } from "../types";
+import {
+  LabReport,
+  LabReportAnalysisStatus,
+  LabReportResultData,
+  LabReportUploadResult,
+} from "../types";
 
 export const uploadLabReport = async (
   familyMemberId: number,
@@ -7,7 +12,7 @@ export const uploadLabReport = async (
   images: string[],
   pdfFile?: string,
   prescribedTestId?: number
-): Promise<LabReport> => {
+): Promise<LabReportUploadResult> => {
   const formData = new FormData();
 
   images.forEach((uri, index) => {
@@ -40,7 +45,14 @@ export const uploadLabReport = async (
     formData,
     { headers: { "Content-Type": "multipart/form-data" } }
   );
-  return data.lab_report;
+  // Contract: create returns a FLAT payload — { lab_report_id, images_uploaded, status, ... }
+  return {
+    id: data.lab_report_id,
+    images_uploaded: data.images_uploaded,
+    status: data.status,
+    message: data.message,
+    message_hindi: data.message_hindi,
+  };
 };
 
 export const getAnalysisStatus = async (
@@ -60,7 +72,17 @@ export const getLabReport = async (
   const { data } = await client.get(
     `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/lab_reports/${reportId}`
   );
-  return data.lab_report;
+  // Contract: findings, critical_findings and summaries are TOP-LEVEL
+  // siblings of lab_report — flatten them into one result object.
+  return {
+    ...data.lab_report,
+    findings: data.findings ?? [],
+    critical_findings: data.critical_findings ?? [],
+    hindi_summary: data.summaries?.hindi ?? null,
+    english_summary: data.summaries?.english ?? null,
+    next_steps: data.summaries?.next_steps ?? null,
+    next_steps_hindi: data.summaries?.next_steps_hindi ?? null,
+  };
 };
 
 export const getLabReports = async (

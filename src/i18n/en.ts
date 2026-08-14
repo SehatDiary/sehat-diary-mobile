@@ -155,7 +155,7 @@ export default {
     chooseGallery: "Upload from Gallery",
     uploadPdf: "Upload PDF",
     analyzeReport: "Analyze Report",
-    uploading: "Uploading %{current} of %{total} images...",
+    uploading: "Uploading %{count} file(s)...",
     analyzing: "AI is reading your report...",
     errorTitle: "Could not read report",
     errorHint: "Try again with clearer photos",

@@ -159,8 +159,10 @@ export default function LabReportResultScreen() {
                   {formatDate(report.report_date)}
                 </Text>
               )}
-              {report.patient_name && (
-                <Text style={styles.patientName}>{report.patient_name}</Text>
+              {report.patient_name_on_report && (
+                <Text style={styles.patientName}>
+                  {report.patient_name_on_report}
+                </Text>
               )}
             </View>
             <View style={styles.completeBadge}>
@@ -170,7 +172,7 @@ export default function LabReportResultScreen() {
             </View>
           </View>
 
-          {report.patient_name_match === false && (
+          {report.patient_match_status === "unmatched" && (
             <View style={styles.nameMismatchBox}>
               <Text style={styles.nameMismatchIcon}>{"\u26A0\uFE0F"}</Text>
               <Text style={styles.nameMismatchText}>

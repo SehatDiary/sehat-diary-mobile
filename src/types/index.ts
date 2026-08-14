@@ -174,28 +174,46 @@ export interface AuthResponse {
   user: User;
 }
 
+// Wire shapes below mirror sehat_diary/docs/API_CONTRACT.md (Lab reports).
+export type LabAnalysisStatus = "pending" | "processing" | "completed" | "failed";
+
+// Items of GET .../lab_reports (lab_report_summary)
 export interface LabReport {
   id: number;
-  health_session_id: number;
-  prescribed_test_id: number | null;
-  status: "uploading" | "analyzing" | "completed" | "failed";
-  image_urls: string[];
-  pdf_url: string | null;
-  results: Record<string, unknown> | null;
   lab_name: string | null;
-  report_type: string | null;
   report_date: string | null;
+  report_type: string | null;
+  analysis_status: LabAnalysisStatus;
   has_critical_findings: boolean;
-  created_at: string;
+  findings_count: number;
+  abnormal_count: number;
+  image_count: number;
+}
+
+// Adapted from the flat create response ({ lab_report_id, ... })
+export interface LabReportUploadResult {
+  id: number;
+  images_uploaded: number;
+  status: LabAnalysisStatus;
+  message: string;
+  message_hindi: string;
 }
 
 export interface LabReportAnalysisStatus {
-  status: "uploading" | "analyzing" | "completed" | "failed";
-  lab_report: LabReport | null;
+  lab_report_id: number;
+  status: LabAnalysisStatus;
+  findings_count?: number;
+  abnormal_count?: number;
+  critical_count?: number;
+  has_critical?: boolean;
+  error?: string;
+  message?: string;
+  message_hindi?: string;
 }
 
 export interface LabReportFinding {
   id: number;
+  section: string | null;
   parameter_name: string;
   hindi_name: string | null;
   value: string;
@@ -206,24 +224,27 @@ export interface LabReportFinding {
   note: string | null;
   hindi_note: string | null;
   is_critical: boolean;
-  section: string;
 }
 
+// Flattened by the getLabReport adapter from the show payload, where
+// findings/critical_findings/summaries are TOP-LEVEL siblings of lab_report.
 export interface LabReportResultData {
   id: number;
   lab_name: string | null;
+  patient_name_on_report: string | null;
+  patient_match_status: "matched" | "unmatched" | "skipped" | null;
   report_date: string | null;
-  patient_name: string | null;
-  patient_name_match: boolean;
-  analysis_status: "uploading" | "analyzing" | "completed" | "failed";
+  report_type: string | null;
+  image_urls: string[];
+  pdf_url: string | null;
+  analysis_status: LabAnalysisStatus;
   has_critical_findings: boolean;
+  findings: LabReportFinding[];
+  critical_findings: LabReportFinding[];
   hindi_summary: string | null;
   english_summary: string | null;
   next_steps: string | null;
   next_steps_hindi: string | null;
-  image_urls: string[];
-  findings: LabReportFinding[];
-  created_at: string;
 }
 
 export interface CaregiverConnection {

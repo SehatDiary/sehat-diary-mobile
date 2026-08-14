@@ -344,9 +344,9 @@ function PulsingBadge({ label }: { label: string }) {
   );
 }
 
-const LAB_REPORT_STATUS_COLORS: Record<LabReport["status"], string> = {
-  uploading: COLORS.warning,
-  analyzing: COLORS.warning,
+const LAB_REPORT_STATUS_COLORS: Record<LabReport["analysis_status"], string> = {
+  pending: COLORS.warning,
+  processing: COLORS.warning,
   completed: COLORS.success,
   failed: COLORS.error,
 };
@@ -362,12 +362,12 @@ function LabReportCard({
 }) {
   const navigation = useNavigation<Nav>();
   const isAnalyzing =
-    report.status === "analyzing" || report.status === "uploading";
+    report.analysis_status === "pending" || report.analysis_status === "processing";
 
   const statusLabel =
     isAnalyzing
       ? i18n.t("labReport.analyzingStatus")
-      : report.status === "completed"
+      : report.analysis_status === "completed"
         ? i18n.t("labReport.readyStatus")
         : i18n.t("labReport.failedStatus");
 
@@ -375,7 +375,7 @@ function LabReportCard({
     <TouchableOpacity
       style={styles.labReportCard}
       activeOpacity={0.7}
-      disabled={report.status !== "completed"}
+      disabled={report.analysis_status !== "completed"}
       onPress={() =>
         navigation.navigate("LabReportResult", {
           memberId,
@@ -405,14 +405,14 @@ function LabReportCard({
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: LAB_REPORT_STATUS_COLORS[report.status] },
+              { backgroundColor: LAB_REPORT_STATUS_COLORS[report.analysis_status] },
             ]}
           >
             <Text style={styles.statusText}>{statusLabel}</Text>
           </View>
         )}
       </View>
-      {report.has_critical_findings && report.status === "completed" && (
+      {report.has_critical_findings && report.analysis_status === "completed" && (
         <View style={styles.criticalRow}>
           <View style={styles.criticalDot} />
           <Text style={styles.criticalText}>
@@ -437,7 +437,7 @@ function LabReportsSection({
   const { data: labReports } = useGetLabReports(memberId, sessionId);
 
   const hasAnalyzing = labReports?.some(
-    (r) => r.status === "analyzing" || r.status === "uploading"
+    (r) => r.analysis_status === "pending" || r.analysis_status === "processing"
   );
 
   // Auto-refresh every 5s when any report is still analyzing
