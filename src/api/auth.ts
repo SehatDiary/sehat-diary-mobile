@@ -33,6 +33,14 @@ export const getMe = async (): Promise<User> => {
   return data.user;
 };
 
+export const updateMe = async (params: {
+  name?: string;
+  email?: string;
+}): Promise<User> => {
+  const { data } = await client.patch("/auth/me", params);
+  return data.user;
+};
+
 export const updateFcmToken = async (fcm_token: string): Promise<void> => {
   await client.post("/auth/update_fcm_token", { fcm_token });
 };

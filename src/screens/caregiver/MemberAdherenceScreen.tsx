@@ -15,6 +15,7 @@ import { useGetMemberAdherence } from "../../hooks/useAdherence";
 import { AdherenceLog, CaregiverStackParamList } from "../../types";
 import { TodayMedicines } from "../../api/adherence";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "MemberAdherence">;
 type Route = RouteProp<CaregiverStackParamList, "MemberAdherence">;
@@ -68,7 +69,7 @@ function MedicineCard({
         {log.taken && log.acknowledged_at && (
           <Text style={styles.acknowledgedText}>
             {i18n.t("medicines.confirmedViaNotification")} {"\u2022"}{" "}
-            {new Date(log.acknowledged_at).toLocaleTimeString("hi-IN", {
+            {new Date(log.acknowledged_at).toLocaleTimeString(dateLocale(), {
               hour: "2-digit",
               minute: "2-digit",
             })}
@@ -100,7 +101,7 @@ export default function MemberAdherenceScreen() {
   const route = useRoute<Route>();
   const { memberId, memberName, highlightAdherenceLogId } = route.params;
 
-  const { data, isLoading, isError, refetch } =
+  const { data, isLoading, isError, isRefetching, refetch } =
     useGetMemberAdherence(memberId);
 
   if (isLoading) {
@@ -168,7 +169,7 @@ export default function MemberAdherenceScreen() {
           stickySectionHeadersEnabled={false}
           refreshControl={
             <RefreshControl
-              refreshing={false}
+              refreshing={isRefetching}
               onRefresh={refetch}
               tintColor={COLORS.primary}
             />

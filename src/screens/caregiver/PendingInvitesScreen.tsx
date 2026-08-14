@@ -117,7 +117,7 @@ function InviteCard({
 
 export default function PendingInvitesScreen() {
   const navigation = useNavigation<Nav>();
-  const { data, isLoading, isError, refetch } = useGetPendingInvites();
+  const { data, isLoading, isError, isRefetching, refetch } = useGetPendingInvites();
   const acceptMutation = useAcceptInvite();
   const declineMutation = useDeclineInvite();
   const [acceptingId, setAcceptingId] = React.useState<number | null>(null);
@@ -215,7 +215,7 @@ export default function PendingInvitesScreen() {
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
-              refreshing={false}
+              refreshing={isRefetching}
               onRefresh={refetch}
               tintColor={COLORS.primary}
             />

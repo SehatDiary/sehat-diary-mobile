@@ -15,6 +15,7 @@ import {
   VisitInstruction,
 } from "../../types";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "VisitConfirmed">;
 type Route = RouteProp<CaregiverStackParamList, "VisitConfirmed">;
@@ -29,7 +30,7 @@ const INSTRUCTION_ICONS: Partial<
 };
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",

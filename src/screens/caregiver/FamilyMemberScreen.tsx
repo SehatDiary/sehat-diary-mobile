@@ -18,12 +18,13 @@ import {
 } from "../../hooks/useFamilyMembers";
 import { CaregiverStackParamList, HealthSession } from "../../types";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "FamilyMember">;
 type Route = RouteProp<CaregiverStackParamList, "FamilyMember">;
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",

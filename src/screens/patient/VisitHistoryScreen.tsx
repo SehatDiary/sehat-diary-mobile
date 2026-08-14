@@ -16,6 +16,7 @@ import { PatientStackParamList, DoctorVisit } from "../../types";
 import { getFamilyMembers, getHealthSessions, getHealthSession } from "../../api/familyMembers";
 import { hindiFirst, ownRecord } from "./patientText";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<PatientStackParamList, "VisitHistory">;
 
@@ -25,7 +26,7 @@ const MAX_SESSIONS = 10;
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "long",
     year: "numeric",

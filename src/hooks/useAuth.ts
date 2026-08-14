@@ -4,6 +4,7 @@ import {
   verifyOtp,
   logout as logoutApi,
   SignupRole,
+  updateMe,
 } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 
@@ -46,3 +47,12 @@ export const useLogout = () => {
     },
   });
 };
+
+export function useUpdateProfile() {
+  const setUser = useAuthStore((state) => state.setUser);
+
+  return useMutation({
+    mutationFn: updateMe,
+    onSuccess: (user) => setUser(user),
+  });
+}

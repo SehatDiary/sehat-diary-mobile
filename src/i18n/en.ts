@@ -1,5 +1,9 @@
 export default {
   auth: {
+    invalidPhone: "Please enter a valid 10-digit phone number",
+    otpDigit: "OTP digit %{index}",
+    otpSendFailed: "Could not send the OTP. Please try again.",
+    invalidRole: "That role cannot be chosen at signup.",
     enterPhone: "Enter your phone number",
     enterOtp: "Enter OTP",
     sendOtp: "Send OTP",
@@ -72,6 +76,10 @@ export default {
   },
   familyMember: {
     profile: "Profile",
+    email: "Email",
+    namePlaceholder: "Your name",
+    emailPlaceholder: "Optional",
+    saveFailed: "Could not save your profile. Please try again.",
     age: "Age",
     gender: "Gender",
     relation: "Relation",
