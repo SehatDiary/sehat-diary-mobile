@@ -46,37 +46,41 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
     );
   };
 
+  // The code is held as a fixed-length array of digits so an empty middle box
+  // stays empty instead of shifting later digits left.
   const handleDigitChange = (index: number, text: string) => {
     const digits = text.replace(/\D/g, "");
-    if (!digits) {
-      // Deletion: clear this box and stay put.
-      setOtp((prev) => {
-        const next = prev.split("");
-        next[index] = "";
-        return next.join("").padEnd(0);
-      });
-      setError("");
-      return;
-    }
+    setError("");
 
     setOtp((prev) => {
-      const chars = prev.padEnd(OTP_LENGTH, " ").split("");
+      const boxes = Array.from(
+        { length: OTP_LENGTH },
+        (_, i) => prev[i] ?? ""
+      );
+
+      if (!digits) {
+        boxes[index] = "";
+        return boxes.join("");
+      }
+
+      // One box may receive the whole code at once (paste or SMS autofill).
       digits
         .slice(0, OTP_LENGTH - index)
         .split("")
         .forEach((digit, offset) => {
-          chars[index + offset] = digit;
+          boxes[index + offset] = digit;
         });
-      const next = chars.join("").trimEnd();
 
-      const filled = Math.min(index + digits.length, OTP_LENGTH - 1);
-      inputRefs.current[filled]?.focus();
-      if (next.replace(/\s/g, "").length === OTP_LENGTH) {
+      const next = boxes.join("");
+      inputRefs.current[
+        Math.min(index + digits.length, OTP_LENGTH - 1)
+      ]?.focus();
+
+      if (next.length === OTP_LENGTH && !next.includes("")) {
         handleVerify(next);
       }
       return next;
     });
-    setError("");
   };
 
   const handleResend = () => {

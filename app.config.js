@@ -9,6 +9,6 @@ module.exports = () => ({
     // Point the app at your machine's LAN IP while developing:
     //   EXPO_PUBLIC_API_BASE=http://192.168.1.5:3000/api/v1 npx expo start
     // See DEV_SETUP.md. Falls back to the emulator-friendly localhost alias.
-    apiBase: process.env.EXPO_PUBLIC_API_BASE ?? null,
+    apiBase: process.env.EXPO_PUBLIC_API_BASE || null,
   },
 });

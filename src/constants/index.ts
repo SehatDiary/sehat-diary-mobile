@@ -39,6 +39,8 @@ const configuredApiBase = Constants.expoConfig?.extra?.apiBase as
   | undefined
   | null;
 
+// An empty EXPO_PUBLIC_API_BASE counts as unset, so a blank env var falls back
+// rather than producing requests against "".
 export const API_BASE = __DEV__
-  ? configuredApiBase || DEV_FALLBACK_API_BASE
+  ? configuredApiBase?.trim() || DEV_FALLBACK_API_BASE
   : PRODUCTION_API_BASE;
