@@ -28,6 +28,7 @@ import {
   CriticalLabReportAction,
   PatientFamilyMember,
 } from "../../types";
+import { useQueryClient } from "@tanstack/react-query";
 import i18n from "../../i18n";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "Dashboard">;
@@ -77,14 +78,13 @@ function MemberCard({ member }: { member: FamilyMember | PatientFamilyMember }) 
 function PendingTestCard({ item }: { item: PendingTestAction }) {
   const navigation = useNavigation<Nav>();
 
+  const visitDate = item.visit_date ? formatDate(item.visit_date) : "";
   const subtitle = item.doctor_name
     ? i18n.t("dashboard.pendingTest", {
         doctor: item.doctor_name,
-        date: formatDate(item.ordered_date),
+        date: visitDate,
       })
-    : i18n.t("dashboard.pendingTestNoDoc", {
-        date: formatDate(item.ordered_date),
-      });
+    : i18n.t("dashboard.pendingTestNoDoc", { date: visitDate });
 
   return (
     <TouchableOpacity
@@ -135,7 +135,9 @@ function PendingReferralCard({ item }: { item: PendingReferralAction }) {
       </View>
       <View style={styles.actionContent}>
         <Text style={styles.actionName}>
-          {i18n.t("dashboard.seeSpecialist", { specialist: item.specialist })}
+          {i18n.t("dashboard.seeSpecialist", {
+            specialist: item.referred_to_specialty ?? item.referred_to_name,
+          })}
         </Text>
         <Text style={styles.actionSubtitle}>{subtitle}</Text>
         {item.reason && (
@@ -177,6 +179,9 @@ function FollowupCard({ item }: { item: UpcomingFollowup }) {
           {formatDate(item.next_visit_date)} {"\u2022"}{" "}
           {i18n.t("dashboard.followupIn", { days: item.days_remaining })}
         </Text>
+        {item.next_visit_instructions && (
+          <Text style={styles.actionDetail}>{item.next_visit_instructions}</Text>
+        )}
         <Text style={styles.actionMember}>{item.family_member_name}</Text>
       </View>
     </TouchableOpacity>
@@ -249,6 +254,7 @@ type PendingItem =
 
 function PendingActionsSection() {
   const { data, isLoading } = useGetPendingActions();
+  const [showAll, setShowAll] = React.useState(false);
 
   if (isLoading) {
     return (
@@ -276,7 +282,7 @@ function PendingActionsSection() {
   ];
 
   const totalCount = items.length;
-  const displayItems = items.slice(0, MAX_PENDING_ITEMS);
+  const displayItems = showAll ? items : items.slice(0, MAX_PENDING_ITEMS);
 
   return (
     <View style={styles.pendingSection}>
@@ -310,9 +316,13 @@ function PendingActionsSection() {
             }
           })}
           {totalCount > MAX_PENDING_ITEMS && (
-            <Text style={styles.seeAllText}>
-              {i18n.t("dashboard.seeAll", { count: totalCount })}
-            </Text>
+            <TouchableOpacity onPress={() => setShowAll((v) => !v)}>
+              <Text style={styles.seeAllText}>
+                {showAll
+                  ? i18n.t("dashboard.showLess")
+                  : i18n.t("dashboard.seeAll", { count: totalCount })}
+              </Text>
+            </TouchableOpacity>
           )}
         </>
       )}
@@ -322,8 +332,22 @@ function PendingActionsSection() {
 
 export default function DashboardScreen() {
   const navigation = useNavigation<Nav>();
-  const { data: members, isLoading, isError, refetch } = useGetFamilyMembers();
+  const queryClient = useQueryClient();
+  const {
+    data: members,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+  } = useGetFamilyMembers();
   const { data: myPatients } = useGetMyPatients();
+
+  const refreshAll = React.useCallback(() => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ["pendingActions"] });
+    queryClient.invalidateQueries({ queryKey: ["pendingInvites"] });
+    queryClient.invalidateQueries({ queryKey: ["myPatients"] });
+  }, [refetch, queryClient]);
 
   if (isLoading) {
     return (
@@ -423,7 +447,11 @@ export default function DashboardScreen() {
         ListHeaderComponent={<InviteBanner />}
         ListFooterComponent={<PendingActionsSection />}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={refetch} tintColor={COLORS.primary} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refreshAll}
+            tintColor={COLORS.primary}
+          />
         }
       />
 
