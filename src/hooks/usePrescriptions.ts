@@ -85,7 +85,7 @@ export const useMarkTestCompleted = () => {
       familyMemberId: number;
       healthSessionId: number;
       testId: number;
-    }) => markTestCompleted(familyMemberId, healthSessionId, testId),
+    }) => markTestCompleted(testId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["healthSession"] });
       queryClient.invalidateQueries({ queryKey: ["doctorVisit"] });
@@ -105,7 +105,7 @@ export const useMarkReferralVisited = () => {
       familyMemberId: number;
       healthSessionId: number;
       referralId: number;
-    }) => markReferralVisited(familyMemberId, healthSessionId, referralId),
+    }) => markReferralVisited(referralId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["healthSession"] });
       queryClient.invalidateQueries({ queryKey: ["doctorVisit"] });
