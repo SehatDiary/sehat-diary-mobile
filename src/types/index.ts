@@ -85,11 +85,15 @@ export interface VisitInstruction {
   text_en: string | null;
 }
 
+// Wire shapes mirror sehat_diary/docs/API_CONTRACT.md (GET /pending_actions).
 export interface PendingTestAction {
   id: number;
   test_name: string;
+  test_type: string;
+  urgency: string;
+  due_by_date: string | null;
   doctor_name: string | null;
-  ordered_date: string;
+  visit_date: string | null;
   family_member_id: number;
   family_member_name: string;
   health_session_id: number;
@@ -97,19 +101,23 @@ export interface PendingTestAction {
 
 export interface PendingReferralAction {
   id: number;
-  specialist: string;
+  referred_to_name: string;
+  referred_to_specialty: string | null;
   reason: string | null;
+  urgency: string;
   doctor_name: string | null;
+  visit_date: string | null;
   family_member_id: number;
   family_member_name: string;
   health_session_id: number;
 }
 
 export interface UpcomingFollowup {
-  id: number;
+  id: number; // doctor_visit id
   doctor_name: string | null;
   next_visit_date: string;
   days_remaining: number;
+  next_visit_instructions: string | null;
   family_member_id: number;
   family_member_name: string;
   health_session_id: number;

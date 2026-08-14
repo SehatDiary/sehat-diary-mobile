@@ -44,6 +44,7 @@ export default {
     followupWith: "Dr. %{doctor} \u0938\u0947 \u092B\u093C\u0949\u0932\u094B-\u0905\u092A",
     followupGeneric: "\u092B\u093C\u0949\u0932\u094B-\u0905\u092A \u0926\u094C\u0930\u093E",
     seeAll: "\u0938\u092D\u0940 %{count} \u0926\u0947\u0916\u0947\u0902",
+    showLess: "\u0915\u092E \u0926\u093F\u0916\u093E\u090F\u0902",
     allClear: "All clear!",
     allClearHi: "\u0938\u092C \u0920\u0940\u0915 \u0939\u0948!",
   },

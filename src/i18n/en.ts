@@ -44,6 +44,7 @@ export default {
     followupWith: "Follow-up with Dr. %{doctor}",
     followupGeneric: "Follow-up visit",
     seeAll: "See all %{count}",
+    showLess: "Show less",
     allClear: "All clear!",
     allClearHi: "\u0938\u092C \u0920\u0940\u0915 \u0939\u0948!",
   },
