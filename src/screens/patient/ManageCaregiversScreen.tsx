@@ -379,7 +379,7 @@ function AddCaregiverSheet({
 }
 
 export default function ManageCaregiversScreen() {
-  const { data, isLoading, isError, refetch } = useGetMyCaregivers();
+  const { data, isLoading, isError, isRefetching, refetch } = useGetMyCaregivers();
   const removeMutation = useRemoveConnection();
   const [sheetVisible, setSheetVisible] = useState(false);
 
@@ -489,7 +489,7 @@ export default function ManageCaregiversScreen() {
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
-              refreshing={false}
+              refreshing={isRefetching}
               onRefresh={refetch}
               tintColor={COLORS.primary}
             />
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   cardPhone: {
-    fontSize: FONT_SIZES.small,
+    fontSize: FONT_SIZES.large,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -608,19 +608,19 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   badgeText: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.large,
     fontWeight: "600",
   },
   pendingInfo: {
     marginTop: 4,
   },
   waitingText: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.large,
     color: COLORS.textSecondary,
     fontStyle: "italic",
   },
   expiryText: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.large,
     color: "#F57F17",
     marginTop: 2,
   },
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   menuItemText: {
-    fontSize: FONT_SIZES.medium,
+    fontSize: FONT_SIZES.large,
     color: COLORS.error,
     fontWeight: "500",
   },
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   emptyTextHi: {
-    fontSize: FONT_SIZES.medium,
+    fontSize: FONT_SIZES.large,
     color: COLORS.textSecondary,
     textAlign: "center",
     marginTop: 8,
@@ -813,21 +813,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   resultText: {
-    fontSize: FONT_SIZES.medium,
+    fontSize: FONT_SIZES.large,
     color: COLORS.text,
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 4,
   },
   resultTextHi: {
-    fontSize: FONT_SIZES.small,
+    fontSize: FONT_SIZES.large,
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 16,
   },
   cancelLink: {
-    fontSize: FONT_SIZES.medium,
+    fontSize: FONT_SIZES.large,
     color: COLORS.textSecondary,
     marginTop: 16,
   },

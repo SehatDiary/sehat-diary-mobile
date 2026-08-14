@@ -11,7 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import Svg, { Circle } from "react-native-svg";
-import { COLORS } from "../../constants";
+import { COLORS, FONT_SIZES } from "../../constants";
 import {
   useGetTodaysMedicines,
   useMarkTaken,
@@ -20,6 +20,7 @@ import {
 import { AdherenceLog, PatientCriticalLabReport, PatientStackParamList } from "../../types";
 import { TodayMedicines } from "../../api/adherence";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<PatientStackParamList, "DailyMedicines">;
 
@@ -98,7 +99,7 @@ function ProgressRing({ pct }: { pct: number }) {
 }
 
 function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("hi-IN", {
+  return new Date(dateStr).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -189,7 +190,7 @@ function CriticalLabAlertCard({
 
 export default function DailyMedicinesScreen() {
   const navigation = useNavigation<Nav>();
-  const { data, isLoading, isError, refetch } = useGetTodaysMedicines();
+  const { data, isLoading, isError, isRefetching, refetch } = useGetTodaysMedicines();
   const markTaken = useMarkTaken();
   const { data: criticalReports } = useGetCriticalLabReports();
 
@@ -320,7 +321,7 @@ export default function DailyMedicinesScreen() {
           }
           refreshControl={
             <RefreshControl
-              refreshing={false}
+              refreshing={isRefetching}
               onRefresh={refetch}
               tintColor={COLORS.primary}
             />
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
   },
   caregiversLinkText: {
     color: COLORS.white,
-    fontSize: 13,
+    fontSize: FONT_SIZES.large,
     fontWeight: "600",
   },
   title: {

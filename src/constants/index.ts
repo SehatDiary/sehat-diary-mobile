@@ -1,3 +1,6 @@
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+
 export const COLORS = {
   primary: "#2D6A4F",
   primaryLight: "#40916C",
@@ -21,6 +24,23 @@ export const FONT_SIZES = {
   title: 28,
 };
 
+const PRODUCTION_API_BASE =
+  "https://sehatdiary-production.up.railway.app/api/v1";
+
+// 10.0.2.2 is the Android emulator's alias for the host machine; a physical
+// device needs your LAN IP via EXPO_PUBLIC_API_BASE (see DEV_SETUP.md).
+const DEV_FALLBACK_API_BASE = Platform.select({
+  android: "http://10.0.2.2:3000/api/v1",
+  default: "http://localhost:3000/api/v1",
+});
+
+const configuredApiBase = Constants.expoConfig?.extra?.apiBase as
+  | string
+  | undefined
+  | null;
+
+// An empty EXPO_PUBLIC_API_BASE counts as unset, so a blank env var falls back
+// rather than producing requests against "".
 export const API_BASE = __DEV__
-  ? "http://192.168.188.55:3000/api/v1"
-  : "https://sehatdiary-production.up.railway.app/api/v1";
+  ? configuredApiBase?.trim() || DEV_FALLBACK_API_BASE
+  : PRODUCTION_API_BASE;

@@ -32,6 +32,7 @@ import {
   LabReport,
 } from "../../types";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "SessionDetail">;
 type Route = RouteProp<CaregiverStackParamList, "SessionDetail">;
@@ -58,7 +59,7 @@ function statusLabel(status: string) {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",

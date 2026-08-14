@@ -15,6 +15,7 @@ import { COLORS, FONT_SIZES } from "../../constants";
 import { CaregiverStackParamList, LabReportFinding } from "../../types";
 import { useGetLabReport } from "../../hooks/useLabReports";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "LabReportResult">;
 type Route = RouteProp<CaregiverStackParamList, "LabReportResult">;
@@ -37,7 +38,7 @@ const STATUS_ICONS: Record<string, string> = {
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",

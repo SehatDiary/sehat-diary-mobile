@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
+  TextInput,
   Text,
   StyleSheet,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import * as Notifications from "expo-notifications";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useLocaleStore, Locale } from "../../store/localeStore";
 import { useAuthStore } from "../../store/authStore";
+import { useUpdateProfile } from "../../hooks/useAuth";
 import { useLogout } from "../../hooks/useAuth";
 import i18n from "../../i18n";
 
@@ -46,6 +48,30 @@ export default function SettingsScreen() {
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
   const user = useAuthStore((s) => s.user);
+  const updateProfile = useUpdateProfile();
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+
+  const isDirty =
+    name.trim() !== (user?.name ?? "").trim() ||
+    email.trim() !== (user?.email ?? "").trim();
+
+  const handleSaveProfile = () => {
+    updateProfile.mutate(
+      { name: name.trim(), email: email.trim() },
+      {
+        onError: (err: unknown) => {
+          const data = (
+            err as { response?: { data?: { errors?: string[] } } }
+          ).response?.data;
+          Alert.alert(
+            i18n.t("common.error"),
+            data?.errors?.join("\n") ?? i18n.t("settings.saveFailed")
+          );
+        },
+      }
+    );
+  };
   const logout = useLogout();
 
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
@@ -90,10 +116,33 @@ export default function SettingsScreen() {
               {i18n.t("settings.profile")}
             </Text>
             <View style={styles.card}>
-              <ProfileRow
+              <EditableRow
                 label={i18n.t("settings.name")}
-                value={user.name ?? "—"}
+                value={name}
+                placeholder={i18n.t("settings.namePlaceholder")}
+                onChangeText={setName}
               />
+              <EditableRow
+                label={i18n.t("settings.email")}
+                value={email}
+                placeholder={i18n.t("settings.emailPlaceholder")}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+              />
+              {isDirty && (
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSaveProfile}
+                  disabled={updateProfile.isPending}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.saveButtonText}>
+                    {updateProfile.isPending
+                      ? i18n.t("common.loading")
+                      : i18n.t("common.save")}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <ProfileRow
                 label={i18n.t("settings.phone")}
                 value={user.phone_number}
@@ -160,6 +209,35 @@ export default function SettingsScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
+    </View>
+  );
+}
+
+function EditableRow({
+  label,
+  value,
+  placeholder,
+  keyboardType,
+  onChangeText,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  keyboardType?: "email-address";
+  onChangeText: (text: string) => void;
+}) {
+  return (
+    <View style={[styles.profileRow, styles.profileRowBorder]}>
+      <Text style={styles.profileLabel}>{label}</Text>
+      <TextInput
+        style={styles.profileInput}
+        value={value}
+        placeholder={placeholder}
+        keyboardType={keyboardType}
+        autoCapitalize={keyboardType === "email-address" ? "none" : "words"}
+        onChangeText={onChangeText}
+        accessibilityLabel={label}
+      />
     </View>
   );
 }
@@ -241,6 +319,26 @@ const styles = StyleSheet.create({
   profileLabel: {
     fontSize: FONT_SIZES.medium,
     color: COLORS.textSecondary,
+  },
+  profileInput: {
+    flex: 1,
+    textAlign: "right",
+    fontSize: FONT_SIZES.medium,
+    color: COLORS.text,
+    paddingVertical: 4,
+    marginLeft: 12,
+  },
+  saveButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    margin: 12,
+  },
+  saveButtonText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "700",
+    color: COLORS.white,
   },
   profileValue: {
     fontSize: FONT_SIZES.medium,

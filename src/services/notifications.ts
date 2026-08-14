@@ -1,4 +1,5 @@
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { Platform, Alert } from "react-native";
 import { updateFcmToken } from "../api/auth";
 import { markTaken } from "../api/adherence";
@@ -41,9 +42,10 @@ export async function registerPushToken(): Promise<string | null> {
   if (!granted) return null;
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: "55273078-ebe9-4838-9c31-33c964af5d46",
-    });
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId as
+      | string
+      | undefined;
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = tokenData.data;
 
     // Send token to backend
@@ -268,10 +270,10 @@ export function setupNotificationListeners(
         );
       } else if (isCaregiverAcceptedNotif(data)) {
         const name = String(data.caregiver_name ?? "");
-        Alert.alert("", `${name} accepted your invite!`);
+        Alert.alert("", i18n.t("caregivers.inviteAccepted", { name }));
         onCaregiverInviteEvent?.();
       } else if (isCaregiverDeclinedNotif(data)) {
-        Alert.alert("", "Invite was declined");
+        Alert.alert("", i18n.t("caregivers.inviteDeclined"));
         onCaregiverInviteEvent?.();
       }
       // caregiver_invite foreground: the push notification banner is shown automatically

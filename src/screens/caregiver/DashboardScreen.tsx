@@ -30,13 +30,14 @@ import {
 } from "../../types";
 import { useQueryClient } from "@tanstack/react-query";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "Dashboard">;
 
 const MAX_PENDING_ITEMS = 5;
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
   });

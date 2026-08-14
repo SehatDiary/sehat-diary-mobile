@@ -20,7 +20,7 @@ export default function RequestOtpScreen({ navigation }: { navigation: any }) {
 
   const handleSendOtp = () => {
     if (phone.length !== 10) {
-      Alert.alert("Error", "Please enter a valid 10-digit phone number");
+      Alert.alert(i18n.t("common.error"), i18n.t("auth.invalidPhone"));
       return;
     }
 
@@ -35,7 +35,7 @@ export default function RequestOtpScreen({ navigation }: { navigation: any }) {
           });
         },
         onError: () => {
-          Alert.alert("Error", "Failed to send OTP. Please try again.");
+          Alert.alert(i18n.t("common.error"), i18n.t("auth.otpSendFailed"));
         },
       }
     );

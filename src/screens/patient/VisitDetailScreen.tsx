@@ -15,13 +15,14 @@ import { PatientStackParamList } from "../../types";
 import { getHealthSession } from "../../api/familyMembers";
 import { hindiFirst } from "./patientText";
 import i18n from "../../i18n";
+import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<PatientStackParamList, "VisitDetail">;
 type Route = RouteProp<PatientStackParamList, "VisitDetail">;
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("hi-IN", {
+  return new Date(dateStr).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "long",
     year: "numeric",
