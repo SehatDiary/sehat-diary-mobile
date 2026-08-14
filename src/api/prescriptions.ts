@@ -1,5 +1,11 @@
 import client from "./client";
-import { ConfirmPrescriptionResult, DoctorVisit, PrescribedTest, Referral } from "../types";
+import {
+  ConfirmPrescriptionResult,
+  DoctorVisit,
+  ExtractionResult,
+  PrescribedTest,
+  Referral,
+} from "../types";
 
 export const uploadImage = async (uri: string): Promise<{ url: string }> => {
   const formData = new FormData();
@@ -23,12 +29,7 @@ export const createPrescription = async (
   familyMemberId: number,
   healthSessionId: number,
   imageUrl: string
-): Promise<{
-  prescription_id: number;
-  extracted_data: Record<string, unknown>;
-  low_confidence_medicines: string[];
-  has_warnings: boolean;
-}> => {
+): Promise<ExtractionResult> => {
   const { data } = await client.post(
     `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescriptions`,
     { image_url: imageUrl }
