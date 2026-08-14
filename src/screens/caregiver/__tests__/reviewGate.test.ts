@@ -1,4 +1,8 @@
-import { canConfirm, countUnreviewedLowConfidence } from "../reviewGate";
+import {
+  canConfirm,
+  countUnreviewedLowConfidence,
+  isMeaningfulEdit,
+} from "../reviewGate";
 
 const med = (confidence: "high" | "medium" | "low") => ({ confidence });
 
@@ -34,5 +38,20 @@ describe("low-confidence review gate", () => {
 
   it("allows confirmation for an empty extraction", () => {
     expect(canConfirm([], [])).toBe(true);
+  });
+});
+
+describe("edit-counts-as-review", () => {
+  it("counts a genuine correction", () => {
+    expect(isMeaningfulEdit("Metfornin", "Metformin")).toBe(true);
+  });
+
+  it("ignores an edit that ends up back at the extracted value", () => {
+    expect(isMeaningfulEdit("Metformin", "Metformin")).toBe(false);
+    expect(isMeaningfulEdit("Metformin", "  Metformin  ")).toBe(false);
+  });
+
+  it("treats clearing the field as an edit", () => {
+    expect(isMeaningfulEdit("Metformin", "")).toBe(true);
   });
 });

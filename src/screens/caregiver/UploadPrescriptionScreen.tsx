@@ -20,7 +20,7 @@ import {
 } from "../../hooks/usePrescriptions";
 import { CaregiverStackParamList, ExtractedMedicine } from "../../types";
 import i18n from "../../i18n";
-import { countUnreviewedLowConfidence } from "./reviewGate";
+import { countUnreviewedLowConfidence, isMeaningfulEdit } from "./reviewGate";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "UploadPrescription">;
 type Route = RouteProp<CaregiverStackParamList, "UploadPrescription">;
@@ -40,6 +40,7 @@ export default function UploadPrescriptionScreen() {
   const [prescriptionId, setPrescriptionId] = useState<number | null>(null);
   const [medicines, setMedicines] = useState<ExtractedMedicine[]>([]);
   const [reviewedIndexes, setReviewedIndexes] = useState<number[]>([]);
+  const [extractedNames, setExtractedNames] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
 
   const pickImage = async (useCamera: boolean) => {
@@ -80,6 +81,7 @@ export default function UploadPrescriptionScreen() {
           const extracted = (data.extracted_data as { medicines?: ExtractedMedicine[] })
             ?.medicines ?? [];
           setMedicines(extracted);
+          setExtractedNames(extracted.map((m) => m.name));
           setReviewedIndexes([]);
           setScreenState(extracted.length > 0 ? "review" : "error");
           if (extracted.length === 0) {
@@ -98,8 +100,11 @@ export default function UploadPrescriptionScreen() {
     setMedicines((prev) =>
       prev.map((m, i) => (i === index ? { ...m, name } : m))
     );
-    // Correcting a row counts as reviewing it — the caregiver has just read it.
-    markReviewed(index);
+    // Correcting a row counts as reviewing it — but only a real correction,
+    // not a keystroke that gets undone.
+    if (isMeaningfulEdit(extractedNames[index], name)) {
+      markReviewed(index);
+    }
   };
 
   const markReviewed = (index: number) => {
@@ -157,6 +162,7 @@ export default function UploadPrescriptionScreen() {
     setImageUri(null);
     setPrescriptionId(null);
     setMedicines([]);
+    setExtractedNames([]);
     setReviewedIndexes([]);
     setErrorMessage("");
   };

@@ -19,6 +19,15 @@ export function countUnreviewedLowConfidence(
   );
 }
 
+// An edit counts as review only when the value actually changed — typing a
+// character and undoing it must not clear the warning.
+export function isMeaningfulEdit(
+  originalName: string | undefined,
+  nextName: string
+): boolean {
+  return (originalName ?? "").trim() !== nextName.trim();
+}
+
 export function canConfirm(
   medicines: Pick<ExtractedMedicine, "confidence">[],
   reviewedIndexes: number[]
