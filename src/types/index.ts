@@ -37,6 +37,7 @@ export interface Prescription {
   created_at: string;
 }
 
+// Visit shapes mirror sehat_diary/docs/API_CONTRACT.md (DoctorVisit full).
 export interface Medicine {
   id: number;
   name: string;
@@ -46,43 +47,84 @@ export interface Medicine {
   instructions_hi: string | null;
   start_date: string | null;
   end_date: string | null;
+  confidence: MedicineConfidence;
+  raw_text: string | null;
 }
 
 export interface DoctorVisit {
   id: number;
+  health_session_id: number;
+  doctor_id: number | null;
+  prescription_id: number | null;
+  visit_date: string;
+  visit_type: string;
+  chief_complaint: string | null;
+  diagnosis: string | null;
+  patient_match_status: "matched" | "unmatched" | "skipped" | null;
   doctor_name: string | null;
   hospital_name: string | null;
-  visit_date: string;
-  diagnosis: string | null;
-  summary_hi: string | null;
+  created_at: string;
+  next_visit_date: string | null;
+  next_visit_instructions: string | null;
+  special_instructions: string | null;
   summary_en: string | null;
-  patient_name_match: boolean;
+  summary_hi: string | null;
   medicines: Medicine[];
-  tests: PrescribedTest[];
+  prescribed_tests: PrescribedTest[];
   referrals: Referral[];
-  instructions: VisitInstruction[];
+  visit_instructions: VisitInstruction[];
 }
+
+export type InstructionType =
+  | "diet"
+  | "exercise"
+  | "lifestyle"
+  | "restriction"
+  | "monitoring"
+  | "device"
+  | "general";
 
 export interface PrescribedTest {
   id: number;
-  name: string;
-  status: "pending" | "completed";
+  doctor_visit_id: number;
+  test_name: string;
+  test_type: string;
+  body_part: string | null;
+  urgency: string;
+  instructions: string | null;
+  status: "pending" | "booked" | "completed" | "cancelled";
+  hindi_name: string | null;
+  hindi_instructions: string | null;
+  due_by_date: string | null;
   completed_at: string | null;
+  lab_report_url: string | null;
+  created_at: string;
 }
 
 export interface Referral {
   id: number;
-  specialist: string;
+  doctor_visit_id: number;
+  referred_to_name: string;
+  referred_to_specialty: string | null;
+  referred_to_hospital: string | null;
   reason: string | null;
-  status: "pending" | "visited";
-  visited_at: string | null;
+  urgency: string;
+  status: "pending" | "visited" | "cancelled";
+  notes: string | null;
+  hindi_explanation: string | null;
+  resulting_health_session_id: number | null;
+  created_at: string;
 }
 
 export interface VisitInstruction {
   id: number;
-  category: "exercise" | "diet" | "device" | "general";
-  text_hi: string;
-  text_en: string | null;
+  doctor_visit_id: number;
+  instruction_type: InstructionType;
+  description: string;
+  hindi_description: string | null;
+  frequency: string | null;
+  duration: string | null;
+  priority: number;
 }
 
 // Wire shapes mirror sehat_diary/docs/API_CONTRACT.md (GET /pending_actions).
@@ -286,6 +328,20 @@ export type PatientStackParamList = {
   DailyMedicines: undefined;
   ManageCaregivers: undefined;
   Settings: undefined;
+  VisitHistory: undefined;
+  VisitDetail: {
+    memberId: number;
+    sessionId: number;
+    doctorVisitId: number;
+  };
+  MedicineDetail: {
+    name: string;
+    dosage: string | null;
+    frequency: string | null;
+    instructionsHi: string | null;
+    durationDays: number | null;
+    rawText: string | null;
+  };
 };
 
 export interface CaregiverInvite {
