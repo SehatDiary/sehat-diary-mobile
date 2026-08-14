@@ -275,7 +275,7 @@ export default function DailyMedicinesScreen() {
           )}
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
-          ListFooterComponent={
+          ListHeaderComponent={
             recentCriticalReports.length > 0 ? (
               <View style={styles.criticalLabSection}>
                 {recentCriticalReports.map((r) => (

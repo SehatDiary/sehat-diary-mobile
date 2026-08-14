@@ -83,9 +83,12 @@ export default function LabReportResultScreen() {
   }, [report?.findings]);
 
   const criticalFindings = useMemo(() => {
+    // The contract's critical_findings array is authoritative; fall back to
+    // deriving from findings only if it is absent.
+    if (report?.critical_findings?.length) return report.critical_findings;
     if (!report?.findings) return [];
     return report.findings.filter((f) => f.is_critical);
-  }, [report?.findings]);
+  }, [report?.critical_findings, report?.findings]);
 
   const handleShare = useCallback(async () => {
     if (!report) return;
@@ -159,8 +162,10 @@ export default function LabReportResultScreen() {
                   {formatDate(report.report_date)}
                 </Text>
               )}
-              {report.patient_name && (
-                <Text style={styles.patientName}>{report.patient_name}</Text>
+              {report.patient_name_on_report && (
+                <Text style={styles.patientName}>
+                  {report.patient_name_on_report}
+                </Text>
               )}
             </View>
             <View style={styles.completeBadge}>
@@ -170,7 +175,7 @@ export default function LabReportResultScreen() {
             </View>
           </View>
 
-          {report.patient_name_match === false && (
+          {report.patient_match_status === "unmatched" && (
             <View style={styles.nameMismatchBox}>
               <Text style={styles.nameMismatchIcon}>{"\u26A0\uFE0F"}</Text>
               <Text style={styles.nameMismatchText}>

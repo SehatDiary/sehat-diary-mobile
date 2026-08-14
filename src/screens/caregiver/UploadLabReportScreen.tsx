@@ -39,7 +39,7 @@ export default function UploadLabReportScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [pdfFile, setPdfFile] = useState<string | null>(null);
   const [reportId, setReportId] = useState<number | null>(null);
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [uploadCount, setUploadCount] = useState(0);
 
   const { data: statusData } = useGetAnalysisStatus(
     reportId,
@@ -109,9 +109,13 @@ export default function UploadLabReportScreen() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const removePdf = useCallback(() => {
+    setPdfFile(null);
+  }, []);
+
   const handleAnalyze = () => {
     setScreenState("uploading");
-    setUploadProgress({ current: 1, total: images.length || 1 });
+    setUploadCount(pdfFile ? 1 : images.length);
 
     uploadMutation.mutate(
       {
@@ -122,8 +126,8 @@ export default function UploadLabReportScreen() {
         prescribedTestId,
       },
       {
-        onSuccess: (labReport) => {
-          setReportId(labReport.id);
+        onSuccess: (result) => {
+          setReportId(result.id);
           setScreenState("analyzing");
         },
         onError: () => {
@@ -161,13 +165,12 @@ export default function UploadLabReportScreen() {
           onPickImage={pickImage}
           onPickPdf={pickPdf}
           onRemoveImage={removeImage}
+          onRemovePdf={removePdf}
           onAnalyze={handleAnalyze}
           hasContent={hasContent}
         />
       )}
-      {screenState === "uploading" && (
-        <UploadingState progress={uploadProgress} />
-      )}
+      {screenState === "uploading" && <UploadingState count={uploadCount} />}
       {screenState === "analyzing" && <AnalyzingState />}
       {screenState === "error" && <ErrorState onRetry={resetToIdle} />}
     </View>
@@ -180,6 +183,7 @@ function IdleState({
   onPickImage,
   onPickPdf,
   onRemoveImage,
+  onRemovePdf,
   onAnalyze,
   hasContent,
 }: {
@@ -188,6 +192,7 @@ function IdleState({
   onPickImage: (useCamera: boolean) => void;
   onPickPdf: () => void;
   onRemoveImage: (index: number) => void;
+  onRemovePdf: () => void;
   onAnalyze: () => void;
   hasContent: boolean;
 }) {
@@ -218,7 +223,7 @@ function IdleState({
             </View>
             <TouchableOpacity
               style={styles.removeButton}
-              onPress={() => onRemoveImage(-1)}
+              onPress={onRemovePdf}
             >
               <Text style={styles.removeButtonText}>{"\u00D7"}</Text>
             </TouchableOpacity>
@@ -279,19 +284,12 @@ function IdleState({
   );
 }
 
-function UploadingState({
-  progress,
-}: {
-  progress: { current: number; total: number };
-}) {
+function UploadingState({ count }: { count: number }) {
   return (
     <View style={styles.centerState}>
       <ActivityIndicator size="large" color={COLORS.primary} />
       <Text style={styles.stateText}>
-        {i18n.t("labReport.uploading", {
-          current: progress.current,
-          total: progress.total,
-        })}
+        {i18n.t("labReport.uploading", { count })}
       </Text>
     </View>
   );
