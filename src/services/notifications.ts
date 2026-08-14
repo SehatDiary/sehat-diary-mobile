@@ -184,6 +184,67 @@ export async function setupNotificationCategories(): Promise<void> {
   ]);
 }
 
+// A response can reach us twice — once via the live listener and once via the
+// getLastNotificationResponseAsync cold-start replay — so track handled ones.
+// The date is part of the key because reminder identifiers are stable per dose
+// and the same notification can legitimately be re-presented and tapped again.
+const handledResponses = new Set<string>();
+
+async function handleNotificationResponse(
+  response: Notifications.NotificationResponse,
+  onMarkTakenSuccess?: () => void
+): Promise<void> {
+  const responseKey = `${response.notification.request.identifier}:${response.actionIdentifier}:${response.notification.date}`;
+  if (handledResponses.has(responseKey)) return;
+  handledResponses.add(responseKey);
+
+  const data = response.notification.request.content.data as Record<
+    string,
+    unknown
+  >;
+
+  if (isCaregiverAlert(data)) {
+    handleCaregiverAlertTap(data);
+    await Notifications.dismissNotificationAsync(
+      response.notification.request.identifier
+    ).catch(() => {});
+    return;
+  }
+
+  if (isCaregiverInviteNotif(data)) {
+    navigate("PendingInvites", {});
+    await Notifications.dismissNotificationAsync(
+      response.notification.request.identifier
+    ).catch(() => {});
+    return;
+  }
+
+  if (!isMedicineReminder(data)) return;
+
+  // Plain tap on the notification body: open the medicines screen, nothing
+  // else — marking a dose taken requires the explicit action button (#33)
+  if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+    navigate("DailyMedicines", {});
+    return;
+  }
+
+  if (response.actionIdentifier !== "mark_taken") return;
+
+  const adherenceLogId = parseInt(String(data.adherence_log_id), 10);
+  const success = await handleMarkTaken(adherenceLogId);
+
+  if (success) {
+    // Dismiss the notification
+    await Notifications.dismissNotificationAsync(
+      response.notification.request.identifier
+    ).catch(() => {});
+
+    onMarkTakenSuccess?.();
+  } else {
+    Alert.alert("Error", "Could not mark medicine as taken. Try again.");
+  }
+}
+
 export function setupNotificationListeners(
   onMarkTakenSuccess?: () => void,
   onCaregiverInviteEvent?: () => void
@@ -210,53 +271,18 @@ export function setupNotificationListeners(
 
   // Handle user tapping notification or action button
   const responseSub = Notifications.addNotificationResponseReceivedListener(
-    async (response) => {
-      const data = response.notification.request.content.data as Record<
-        string,
-        unknown
-      >;
-
-      if (isCaregiverAlert(data)) {
-        handleCaregiverAlertTap(data);
-        await Notifications.dismissNotificationAsync(
-          response.notification.request.identifier
-        ).catch(() => {});
-        return;
-      }
-
-      if (isCaregiverInviteNotif(data)) {
-        navigate("PendingInvites", {});
-        await Notifications.dismissNotificationAsync(
-          response.notification.request.identifier
-        ).catch(() => {});
-        return;
-      }
-
-      if (!isMedicineReminder(data)) return;
-
-      const adherenceLogId = parseInt(String(data.adherence_log_id), 10);
-      const actionId = response.actionIdentifier;
-
-      // User tapped the action button OR tapped the notification itself
-      if (
-        actionId === "mark_taken" ||
-        actionId === Notifications.DEFAULT_ACTION_IDENTIFIER
-      ) {
-        const success = await handleMarkTaken(adherenceLogId);
-
-        if (success) {
-          // Dismiss the notification
-          await Notifications.dismissNotificationAsync(
-            response.notification.request.identifier
-          ).catch(() => {});
-
-          onMarkTakenSuccess?.();
-        } else {
-          Alert.alert("Error", "Could not mark medicine as taken. Try again.");
-        }
-      }
+    (response) => {
+      handleNotificationResponse(response, onMarkTakenSuccess);
     }
   );
+
+  // Cold start: the app may have been launched by a notification tap before
+  // this listener existed — replay that response through the same handler
+  Notifications.getLastNotificationResponseAsync()
+    .then((response) => {
+      if (response) handleNotificationResponse(response, onMarkTakenSuccess);
+    })
+    .catch(() => {});
 
   return () => {
     receivedSub.remove();
