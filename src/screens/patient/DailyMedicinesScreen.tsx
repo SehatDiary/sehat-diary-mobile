@@ -107,13 +107,21 @@ function formatTime(dateStr: string) {
 function MedicineCard({
   log,
   onMarkTaken,
+  onOpen,
 }: {
   log: AdherenceLog;
   onMarkTaken: (id: number) => void;
+  onOpen: (log: AdherenceLog) => void;
 }) {
   return (
     <View style={[styles.card, log.taken && styles.cardTaken]}>
-      <View style={styles.cardContent}>
+      <TouchableOpacity
+        style={styles.cardContent}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={log.medicine_name}
+        onPress={() => onOpen(log)}
+      >
         <Text style={styles.medicineName}>{log.medicine_name}</Text>
         {log.instructions_hi && (
           <Text style={styles.instructions}>{log.instructions_hi}</Text>
@@ -132,7 +140,8 @@ function MedicineCard({
             {i18n.t("medicines.reminderSent", { count: log.reminder_count })}
           </Text>
         )}
-      </View>
+        <Text style={styles.moreLink}>{i18n.t("medicines.whatIsThis")}</Text>
+      </TouchableOpacity>
       {log.taken ? (
         <View style={styles.takenBadge}>
           <Text style={styles.takenText}>{i18n.t("medicines.taken")}</Text>
@@ -186,6 +195,17 @@ export default function DailyMedicinesScreen() {
 
   const handleMarkTaken = (id: number) => {
     markTaken.mutate(id);
+  };
+
+  const openMedicineDetail = (log: AdherenceLog) => {
+    navigation.navigate("MedicineDetail", {
+      name: log.medicine_name,
+      dosage: log.dosage,
+      frequency: log.frequency,
+      instructionsHi: log.instructions_hi,
+      durationDays: null,
+      rawText: null,
+    });
   };
 
   if (isLoading) {
@@ -243,6 +263,16 @@ export default function DailyMedicinesScreen() {
           <TouchableOpacity
             style={styles.caregiversLink}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("VisitHistory")}
+          >
+            <Text style={styles.caregiversLinkText}>
+              {i18n.t("visitHistory.title")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.caregiversLink}
+            activeOpacity={0.7}
             onPress={() => navigation.navigate("ManageCaregivers")}
           >
             <Text style={styles.caregiversLinkText}>
@@ -271,7 +301,11 @@ export default function DailyMedicinesScreen() {
             </View>
           )}
           renderItem={({ item }) => (
-            <MedicineCard log={item} onMarkTaken={handleMarkTaken} />
+            <MedicineCard
+              log={item}
+              onMarkTaken={handleMarkTaken}
+              onOpen={openMedicineDetail}
+            />
           )}
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
@@ -405,6 +439,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     backgroundColor: "#F0FFF4",
   },
+  moreLink: {
+    fontSize: 18,
+    color: COLORS.primary,
+    marginTop: 10,
+  },
   cardContent: {
     flex: 1,
     marginRight: 12,
@@ -426,12 +465,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   acknowledgedText: {
-    fontSize: 13,
+    fontSize: 18,
     color: COLORS.success,
     marginTop: 4,
   },
   reminderCountText: {
-    fontSize: 13,
+    fontSize: 18,
     color: COLORS.warning,
     marginTop: 4,
   },

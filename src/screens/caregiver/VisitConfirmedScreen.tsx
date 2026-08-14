@@ -19,7 +19,9 @@ import i18n from "../../i18n";
 type Nav = StackNavigationProp<CaregiverStackParamList, "VisitConfirmed">;
 type Route = RouteProp<CaregiverStackParamList, "VisitConfirmed">;
 
-const INSTRUCTION_ICONS: Record<VisitInstruction["category"], string> = {
+const INSTRUCTION_ICONS: Partial<
+  Record<VisitInstruction["instruction_type"], string>
+> = {
   exercise: "\u{1F3C3}",
   diet: "\u{1F957}",
   device: "\u{1F527}",
@@ -57,7 +59,7 @@ export default function VisitConfirmedScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {!doctorVisit.patient_name_match && (
+        {doctorVisit.patient_match_status === "unmatched" && (
           <View style={styles.warningBanner}>
             <Text style={styles.warningIcon}>{"\u26A0\uFE0F"}</Text>
             <Text style={styles.warningText}>
@@ -85,9 +87,9 @@ export default function VisitConfirmedScreen() {
         )}
 
         <MedicinesSection medicines={doctorVisit.medicines} />
-        <TestsSection tests={doctorVisit.tests} />
+        <TestsSection tests={doctorVisit.prescribed_tests} />
         <ReferralsSection referrals={doctorVisit.referrals} />
-        <InstructionsSection instructions={doctorVisit.instructions} />
+        <InstructionsSection instructions={doctorVisit.visit_instructions} />
       </ScrollView>
 
       <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
@@ -122,7 +124,7 @@ function MedicinesSection({ medicines }: { medicines: DoctorVisit["medicines"] }
   );
 }
 
-function TestsSection({ tests }: { tests: DoctorVisit["tests"] }) {
+function TestsSection({ tests }: { tests: DoctorVisit["prescribed_tests"] }) {
   if (tests.length === 0) return null;
 
   return (
@@ -135,7 +137,9 @@ function TestsSection({ tests }: { tests: DoctorVisit["tests"] }) {
         <View key={test.id} style={styles.compactItem}>
           <View style={styles.testRow}>
             <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
-            <Text style={styles.compactName}>{test.name}</Text>
+            <Text style={styles.compactName}>
+              {test.hindi_name ?? test.test_name}
+            </Text>
           </View>
           <Text style={styles.pendingLabel}>{i18n.t("visit.pendingStatus")}</Text>
         </View>
@@ -155,7 +159,9 @@ function ReferralsSection({ referrals }: { referrals: DoctorVisit["referrals"] }
       </View>
       {referrals.map((ref) => (
         <View key={ref.id} style={styles.compactItem}>
-          <Text style={styles.compactName}>{ref.specialist}</Text>
+          <Text style={styles.compactName}>
+            {ref.referred_to_specialty ?? ref.referred_to_name}
+          </Text>
           {ref.reason && (
             <Text style={styles.compactDetail}>{ref.reason}</Text>
           )}
@@ -168,7 +174,7 @@ function ReferralsSection({ referrals }: { referrals: DoctorVisit["referrals"] }
 function InstructionsSection({
   instructions,
 }: {
-  instructions: DoctorVisit["instructions"];
+  instructions: DoctorVisit["visit_instructions"];
 }) {
   if (instructions.length === 0) return null;
 
@@ -181,15 +187,17 @@ function InstructionsSection({
       {instructions.map((inst) => (
         <View key={inst.id} style={styles.instructionItem}>
           <Text style={styles.instructionIcon}>
-            {INSTRUCTION_ICONS[inst.category]}
+            {INSTRUCTION_ICONS[inst.instruction_type] ?? "\u{1F4DD}"}
           </Text>
           <View style={styles.instructionContent}>
             <Text style={styles.instructionCategory}>
-              {i18n.t(`visit.${inst.category}`)}
+              {i18n.t(`visit.${inst.instruction_type}`)}
             </Text>
-            <Text style={styles.instructionText}>{inst.text_hi}</Text>
-            {inst.text_en && (
-              <Text style={styles.instructionTextEn}>{inst.text_en}</Text>
+            <Text style={styles.instructionText}>
+              {inst.hindi_description ?? inst.description}
+            </Text>
+            {inst.hindi_description && (
+              <Text style={styles.instructionTextEn}>{inst.description}</Text>
             )}
           </View>
         </View>

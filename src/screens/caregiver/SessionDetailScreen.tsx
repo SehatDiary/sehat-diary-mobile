@@ -43,7 +43,9 @@ const STATUS_COLORS: Record<string, string> = {
   failed: COLORS.error,
 };
 
-const INSTRUCTION_ICONS: Record<VisitInstruction["category"], string> = {
+const INSTRUCTION_ICONS: Partial<
+  Record<VisitInstruction["instruction_type"], string>
+> = {
   exercise: "\u{1F3C3}",
   diet: "\u{1F957}",
   device: "\u{1F527}",
@@ -201,7 +203,9 @@ function PendingActionsSection({
             <View key={test.id} style={styles.actionItem}>
               <View style={styles.actionInfo}>
                 <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
-                <Text style={styles.actionName}>{test.name}</Text>
+                <Text style={styles.actionName}>
+                  {test.hindi_name ?? test.test_name}
+                </Text>
               </View>
               <View style={styles.actionButtons}>
                 <TouchableOpacity
@@ -241,7 +245,9 @@ function PendingActionsSection({
               <View style={styles.actionInfo}>
                 <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
                 <View style={styles.actionTextGroup}>
-                  <Text style={styles.actionName}>{ref.specialist}</Text>
+                  <Text style={styles.actionName}>
+                    {ref.referred_to_specialty ?? ref.referred_to_name}
+                  </Text>
                   {ref.reason && (
                     <Text style={styles.actionDetail}>{ref.reason}</Text>
                   )}
@@ -266,7 +272,9 @@ function PendingActionsSection({
         <View key={test.id} style={[styles.actionItem, { opacity: 0.6 }]}>
           <View style={styles.actionInfo}>
             <View style={[styles.statusDot, { backgroundColor: COLORS.success }]} />
-            <Text style={styles.actionName}>{test.name}</Text>
+            <Text style={styles.actionName}>
+                  {test.hindi_name ?? test.test_name}
+                </Text>
           </View>
           <Text style={styles.completedLabel}>{i18n.t("session.completed")}</Text>
         </View>
@@ -277,7 +285,9 @@ function PendingActionsSection({
         <View key={ref.id} style={[styles.actionItem, { opacity: 0.6 }]}>
           <View style={styles.actionInfo}>
             <View style={[styles.statusDot, { backgroundColor: COLORS.success }]} />
-            <Text style={styles.actionName}>{ref.specialist}</Text>
+            <Text style={styles.actionName}>
+                    {ref.referred_to_specialty ?? ref.referred_to_name}
+                  </Text>
           </View>
           <Text style={styles.completedLabel}>{i18n.t("session.visited")}</Text>
         </View>
@@ -299,12 +309,14 @@ function DoctorAdviceSection({
       {instructions.map((inst) => (
         <View key={inst.id} style={styles.adviceItem}>
           <Text style={styles.adviceIcon}>
-            {INSTRUCTION_ICONS[inst.category]}
+            {INSTRUCTION_ICONS[inst.instruction_type] ?? "\u{1F4DD}"}
           </Text>
           <View style={styles.adviceContent}>
-            <Text style={styles.adviceText}>{inst.text_hi}</Text>
-            {inst.text_en && (
-              <Text style={styles.adviceTextEn}>{inst.text_en}</Text>
+            <Text style={styles.adviceText}>
+              {inst.hindi_description ?? inst.description}
+            </Text>
+            {inst.hindi_description && (
+              <Text style={styles.adviceTextEn}>{inst.description}</Text>
             )}
           </View>
         </View>
@@ -557,12 +569,12 @@ export default function SessionDetailScreen() {
           <React.Fragment key={visit.id}>
             <DoctorVisitCard visit={visit} />
             <PendingActionsSection
-              tests={visit.tests}
+              tests={visit.prescribed_tests}
               referrals={visit.referrals}
               memberId={memberId}
               sessionId={sessionId}
             />
-            <DoctorAdviceSection instructions={visit.instructions} />
+            <DoctorAdviceSection instructions={visit.visit_instructions} />
           </React.Fragment>
         ))}
 
