@@ -109,28 +109,6 @@ function isCaregiverDeclinedNotif(data: Record<string, unknown>): boolean {
   return data.type === "caregiver_declined";
 }
 
-export async function presentCaregiverAlert(
-  data: CaregiverAlertData
-): Promise<void> {
-  const identifier = `caregiver-alert-${data.adherence_log_id}`;
-
-  // Dismiss existing notification for same dose
-  await Notifications.dismissNotificationAsync(identifier).catch(() => {});
-
-  await Notifications.scheduleNotificationAsync({
-    identifier,
-    content: {
-      title: "\u0926\u0935\u093E\u0908 \u091B\u0942\u091F \u0917\u0908",
-      body: `${data.member_name} \u0928\u0947 ${data.medicine_name} \u0928\u0939\u0940\u0902 \u0932\u0940`,
-      data: data as unknown as Record<string, unknown>,
-      ...(Platform.OS === "android" && {
-        channelId: "medicine-reminders",
-      }),
-    },
-    trigger: null,
-  });
-}
-
 function handleCaregiverAlertTap(data: Record<string, unknown>): void {
   const memberId = parseInt(String(data.family_member_id), 10);
   if (Number.isNaN(memberId)) {
@@ -156,43 +134,23 @@ export async function handleMarkTaken(adherenceLogId: number): Promise<boolean> 
   }
 }
 
-// Dismiss and replace notification for same dose (no stacking)
-export async function presentMedicineReminder(
-  data: MedicineReminderData
-): Promise<void> {
-  const identifier = `reminder-${data.adherence_log_id}`;
-
-  // Dismiss existing notification for same dose
-  await Notifications.dismissNotificationAsync(identifier).catch(() => {});
-
-  await Notifications.scheduleNotificationAsync({
-    identifier,
-    content: {
-      title: data.medicine_name,
-      body: data.instructions_hi ?? "दवाई लेने का समय",
-      data: data as unknown as Record<string, unknown>,
-      categoryIdentifier: "medicine_reminder",
-      ...(Platform.OS === "android" && {
-        channelId: "medicine-reminders",
-      }),
-    },
-    trigger: null, // Show immediately
-  });
-}
-
 export async function dismissDuplicateReminders(
+  type: string,
   adherenceLogId: string,
   keepIdentifier: string
 ): Promise<void> {
   try {
     const presented = await Notifications.getPresentedNotificationsAsync();
     const stale = findStaleReminderIdentifiers(
-      presented.map((n) => ({
-        identifier: n.request.identifier,
-        adherenceLogId: String(
-          (n.request.content.data as Record<string, unknown>)?.adherence_log_id
-        ),
-      })),
+      presented.map((n) => {
+        const data = n.request.content.data as Record<string, unknown>;
+        return {
+          identifier: n.request.identifier,
+          type: String(data?.type),
+          adherenceLogId: String(data?.adherence_log_id),
+        };
+      }),
+      type,
       adherenceLogId,
       keepIdentifier
     );
@@ -298,11 +256,13 @@ export function setupNotificationListeners(
         // correctly on its own — re-presenting it locally would show a second
         // banner. Just clear any earlier copies of the same dose.
         dismissDuplicateReminders(
+          "medicine_reminder",
           String(data.adherence_log_id),
           notification.request.identifier
         );
       } else if (isCaregiverAlert(data)) {
         dismissDuplicateReminders(
+          "caregiver_alert",
           String(data.adherence_log_id),
           notification.request.identifier
         );
