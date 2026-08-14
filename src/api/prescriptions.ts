@@ -61,23 +61,19 @@ export const getDoctorVisit = async (
 };
 
 export const markTestCompleted = async (
-  familyMemberId: number,
-  healthSessionId: number,
   testId: number
 ): Promise<PrescribedTest> => {
   const { data } = await client.patch(
-    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescribed_tests/${testId}/complete`
+    `/prescribed_tests/${testId}/mark_completed`
   );
   return data.prescribed_test;
 };
 
 export const markReferralVisited = async (
-  familyMemberId: number,
-  healthSessionId: number,
   referralId: number
 ): Promise<Referral> => {
   const { data } = await client.patch(
-    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/referrals/${referralId}/visited`
+    `/referrals/${referralId}/mark_visited`
   );
   return data.referral;
 };
