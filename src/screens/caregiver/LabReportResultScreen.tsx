@@ -83,9 +83,12 @@ export default function LabReportResultScreen() {
   }, [report?.findings]);
 
   const criticalFindings = useMemo(() => {
+    // The contract's critical_findings array is authoritative; fall back to
+    // deriving from findings only if it is absent.
+    if (report?.critical_findings?.length) return report.critical_findings;
     if (!report?.findings) return [];
     return report.findings.filter((f) => f.is_critical);
-  }, [report?.findings]);
+  }, [report?.critical_findings, report?.findings]);
 
   const handleShare = useCallback(async () => {
     if (!report) return;
