@@ -14,6 +14,7 @@ export default {
   medicines: {
     title: "Today's Medicines",
     taken: "Taken \u2713",
+    markTakenFailed: "Could not mark the medicine as taken. Please try again.",
     pending: "Pending",
     morning: "Morning",
     afternoon: "Afternoon",
