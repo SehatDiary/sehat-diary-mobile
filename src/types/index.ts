@@ -340,3 +340,34 @@ export type CaregiverStackParamList = {
   };
   Settings: undefined;
 };
+
+// Extraction response — sehat_diary/docs/API_CONTRACT.md (POST .../prescriptions).
+export type MedicineConfidence = "high" | "medium" | "low";
+
+export interface ExtractedMedicine {
+  name: string;
+  // Always present and valid: the server normalises an absent or unreadable
+  // level to "low" so an unknown extraction is reviewed, never waved through.
+  confidence: MedicineConfidence;
+  raw_text: string | null; // as written on the prescription
+  strength?: string | null;
+  form?: string | null;
+  dose?: string | null;
+  dosage?: string | null;
+  frequency?: string | null;
+  timing?: string | null;
+  duration?: string | null;
+  duration_days?: number | null;
+  instructions_hi?: string | null;
+  hindi_explanation?: string | null;
+  english_explanation?: string | null;
+}
+
+export interface ExtractionResult {
+  prescription_id: number;
+  extracted_data: { medicines?: ExtractedMedicine[] } & Record<string, unknown>;
+  confidence_counts: Record<MedicineConfidence, number>;
+  /** @deprecated lossy — read extracted_data.medicines[].confidence instead */
+  low_confidence_medicines: string[];
+  has_warnings: boolean;
+}

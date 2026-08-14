@@ -18,21 +18,14 @@ import {
   useUploadPrescription,
   useConfirmPrescription,
 } from "../../hooks/usePrescriptions";
-import { CaregiverStackParamList } from "../../types";
+import { CaregiverStackParamList, ExtractedMedicine } from "../../types";
 import i18n from "../../i18n";
+import { countUnreviewedLowConfidence } from "./reviewGate";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "UploadPrescription">;
 type Route = RouteProp<CaregiverStackParamList, "UploadPrescription">;
 
 type ScreenState = "idle" | "processing" | "review" | "error";
-
-interface ExtractedMedicine {
-  name: string;
-  dosage: string | null;
-  frequency: string | null;
-  duration_days: number | null;
-  instructions_hi: string | null;
-}
 
 export default function UploadPrescriptionScreen() {
   const navigation = useNavigation<Nav>();
@@ -46,7 +39,7 @@ export default function UploadPrescriptionScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [prescriptionId, setPrescriptionId] = useState<number | null>(null);
   const [medicines, setMedicines] = useState<ExtractedMedicine[]>([]);
-  const [lowConfidence, setLowConfidence] = useState<string[]>([]);
+  const [reviewedIndexes, setReviewedIndexes] = useState<number[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
 
   const pickImage = async (useCamera: boolean) => {
@@ -87,7 +80,7 @@ export default function UploadPrescriptionScreen() {
           const extracted = (data.extracted_data as { medicines?: ExtractedMedicine[] })
             ?.medicines ?? [];
           setMedicines(extracted);
-          setLowConfidence(data.low_confidence_medicines ?? []);
+          setReviewedIndexes([]);
           setScreenState(extracted.length > 0 ? "review" : "error");
           if (extracted.length === 0) {
             setErrorMessage(i18n.t("prescription.noMedicinesFound"));
@@ -105,7 +98,20 @@ export default function UploadPrescriptionScreen() {
     setMedicines((prev) =>
       prev.map((m, i) => (i === index ? { ...m, name } : m))
     );
+    // Correcting a row counts as reviewing it — the caregiver has just read it.
+    markReviewed(index);
   };
+
+  const markReviewed = (index: number) => {
+    setReviewedIndexes((prev) =>
+      prev.includes(index) ? prev : [...prev, index]
+    );
+  };
+
+  const unreviewedLowCount = countUnreviewedLowConfidence(
+    medicines,
+    reviewedIndexes
+  );
 
   const handleConfirm = () => {
     if (!prescriptionId) return;
@@ -151,7 +157,7 @@ export default function UploadPrescriptionScreen() {
     setImageUri(null);
     setPrescriptionId(null);
     setMedicines([]);
-    setLowConfidence([]);
+    setReviewedIndexes([]);
     setErrorMessage("");
   };
 
@@ -169,8 +175,10 @@ export default function UploadPrescriptionScreen() {
       {screenState === "review" && (
         <ReviewState
           medicines={medicines}
-          lowConfidence={lowConfidence}
+          reviewedIndexes={reviewedIndexes}
+          unreviewedLowCount={unreviewedLowCount}
           onUpdateName={updateMedicineName}
+          onMarkReviewed={markReviewed}
           onConfirm={handleConfirm}
           isConfirming={confirmPrescription.isPending}
         />
@@ -238,14 +246,18 @@ function ProcessingState({ imageUri }: { imageUri: string | null }) {
 
 function ReviewState({
   medicines,
-  lowConfidence,
+  reviewedIndexes,
+  unreviewedLowCount,
   onUpdateName,
+  onMarkReviewed,
   onConfirm,
   isConfirming,
 }: {
   medicines: ExtractedMedicine[];
-  lowConfidence: string[];
+  reviewedIndexes: number[];
+  unreviewedLowCount: number;
   onUpdateName: (index: number, name: string) => void;
+  onMarkReviewed: (index: number) => void;
   onConfirm: () => void;
   isConfirming: boolean;
 }) {
@@ -264,17 +276,38 @@ function ReviewState({
         keyboardShouldPersistTaps="handled"
       >
         {medicines.map((med, index) => {
-          const isLow = lowConfidence.includes(med.name);
+          const isLow = med.confidence === "low";
+          const isMedium = med.confidence === "medium";
+          const isReviewed = reviewedIndexes.includes(index);
           return (
             <View
               key={index}
-              style={[styles.medicineCard, isLow && styles.medicineCardLow]}
+              style={[
+                styles.medicineCard,
+                isMedium && styles.medicineCardMedium,
+                isLow && styles.medicineCardLow,
+              ]}
             >
               {isLow && (
                 <View style={styles.lowBadge}>
                   <Text style={styles.lowBadgeText}>
-                    ⚠ {i18n.t("prescription.lowConfidence")}
+                    ⚠ {i18n.t("prescription.attentionNeeded")}
                   </Text>
+                </View>
+              )}
+              {isMedium && (
+                <View style={styles.mediumBadge}>
+                  <Text style={styles.mediumBadgeText}>
+                    {i18n.t("prescription.pleaseCheck")}
+                  </Text>
+                </View>
+              )}
+              {isLow && med.raw_text && (
+                <View style={styles.rawTextBox}>
+                  <Text style={styles.rawTextLabel}>
+                    {i18n.t("prescription.asWritten")}
+                  </Text>
+                  <Text style={styles.rawTextValue}>{med.raw_text}</Text>
                 </View>
               )}
               <Text style={styles.fieldLabel}>
@@ -321,20 +354,49 @@ function ReviewState({
                   </Text>
                 </View>
               )}
+              {isLow && (
+                <TouchableOpacity
+                  style={[
+                    styles.reviewedButton,
+                    isReviewed && styles.reviewedButtonDone,
+                  ]}
+                  onPress={() => onMarkReviewed(index)}
+                  disabled={isReviewed}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[
+                      styles.reviewedButtonText,
+                      isReviewed && styles.reviewedButtonTextDone,
+                    ]}
+                  >
+                    {isReviewed
+                      ? `✓ ${i18n.t("prescription.reviewed")}`
+                      : i18n.t("prescription.markReviewed")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           );
         })}
       </ScrollView>
 
       <TouchableOpacity
-        style={[styles.confirmButton, isConfirming && styles.confirmButtonDisabled]}
+        style={[
+          styles.confirmButton,
+          (isConfirming || unreviewedLowCount > 0) && styles.confirmButtonDisabled,
+        ]}
         onPress={onConfirm}
-        disabled={isConfirming}
+        disabled={isConfirming || unreviewedLowCount > 0}
       >
         <Text style={styles.confirmText}>
           {isConfirming
             ? i18n.t("prescription.confirming")
-            : i18n.t("prescription.confirmMedicines")}
+            : unreviewedLowCount > 0
+              ? i18n.t("prescription.unreviewedCount", {
+                  count: unreviewedLowCount,
+                })
+              : i18n.t("prescription.confirmMedicines")}
         </Text>
       </TouchableOpacity>
     </View>
@@ -507,7 +569,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   lowBadge: {
-    backgroundColor: COLORS.warning,
+    backgroundColor: COLORS.error,
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -517,7 +579,60 @@ const styles = StyleSheet.create({
   lowBadgeText: {
     fontSize: 12,
     fontWeight: "600",
+    color: COLORS.white,
+  },
+  medicineCardMedium: {
+    borderColor: COLORS.warning,
+    borderWidth: 1,
+  },
+  mediumBadge: {
+    backgroundColor: COLORS.warning,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  mediumBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
     color: COLORS.text,
+  },
+  rawTextBox: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
+  rawTextLabel: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  rawTextValue: {
+    fontSize: FONT_SIZES.medium,
+    color: COLORS.text,
+    fontStyle: "italic",
+  },
+  reviewedButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  reviewedButtonDone: {
+    borderColor: COLORS.success,
+    backgroundColor: COLORS.background,
+  },
+  reviewedButtonText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  reviewedButtonTextDone: {
+    color: COLORS.success,
   },
   fieldLabel: {
     fontSize: FONT_SIZES.small,
