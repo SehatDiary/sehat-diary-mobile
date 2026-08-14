@@ -238,6 +238,8 @@ export default {
     personFound: "This person is on Sehat Diary",
     personFoundHi: "यह व्यक्ति Sehat Diary पर है",
     personNotFound: "This number is not registered on Sehat Diary yet",
+    invitePendingInfo: "Invite already sent. Ask them to accept in the app.",
+    invitePendingInfoHi: "Invite पहले से भेजी जा चुकी है। उन्हें app में accept करने को कहें।",
     personNotFoundHi:
       "यह नंबर अभी Sehat Diary पर registered नहीं है",
     alreadyConnected: "This person is already your caregiver",

@@ -26,6 +26,7 @@ import {
   PendingReferralAction,
   UpcomingFollowup,
   CriticalLabReportAction,
+  PatientFamilyMember,
 } from "../../types";
 import i18n from "../../i18n";
 
@@ -40,7 +41,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-function MemberCard({ member }: { member: FamilyMember }) {
+function MemberCard({ member }: { member: FamilyMember | PatientFamilyMember }) {
   const navigation = useNavigation<Nav>();
 
   return (
@@ -60,9 +61,9 @@ function MemberCard({ member }: { member: FamilyMember }) {
           <Text style={styles.memberRelation}>{member.relation}</Text>
         </View>
       </View>
-      {member.chronic_conditions.length > 0 && (
+      {("chronic_conditions" in member ? member.chronic_conditions : []).length > 0 && (
         <View style={styles.conditionsRow}>
-          {member.chronic_conditions.slice(0, 3).map((c, i) => (
+          {("chronic_conditions" in member ? member.chronic_conditions : []).slice(0, 3).map((c, i) => (
             <View key={i} style={styles.conditionChip}>
               <Text style={styles.conditionText}>{c}</Text>
             </View>
@@ -378,7 +379,7 @@ export default function DashboardScreen() {
 
   const patientSections = (myPatients ?? []).map((patient) => ({
     key: `patient-${patient.id}`,
-    title: i18n.t("caregivers.patientFamily", { name: patient.patient_name }),
+    title: i18n.t("caregivers.patientFamily", { name: patient.name }),
     data: patient.family_members,
   }));
 

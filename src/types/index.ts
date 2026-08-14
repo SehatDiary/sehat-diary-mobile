@@ -247,19 +247,31 @@ export interface LabReportResultData {
   next_steps_hindi: string | null;
 }
 
+// Wire shapes mirror sehat_diary/docs/API_CONTRACT.md (Caregiver connections).
 export interface CaregiverConnection {
   id: number;
-  caregiver_id: number;
-  caregiver_name: string | null;
-  caregiver_phone_masked: string;
+  name: string | null;
+  phone_number: string | null; // masked, e.g. +91*****88
   status: "accepted" | "pending";
-  expires_at: string | null;
-  created_at: string;
+  invited_at: string;
+  responded_at: string | null;
+  expires_at: string | null; // non-null only while pending; may be in the past
+  permission_level: string;
 }
 
 export interface PhoneLookupResult {
-  found: boolean;
-  already_connected: boolean;
+  registered: boolean;
+  already_connected?: boolean;
+  invite_pending?: boolean;
+  can_invite?: boolean;
+  message?: string;
+  message_hindi?: string;
+}
+
+export interface SendInviteResult {
+  success: boolean;
+  connection_id: number;
+  expires_at: string;
 }
 
 export type PatientStackParamList = {
@@ -271,16 +283,24 @@ export type PatientStackParamList = {
 export interface CaregiverInvite {
   id: number;
   patient_name: string;
-  patient_phone_masked: string;
-  status: "pending" | "accepted" | "declined" | "expired";
+  invited_at: string;
   expires_at: string;
-  created_at: string;
+  expires_in_hours: number;
+}
+
+export interface PatientFamilyMember {
+  id: number;
+  name: string;
+  relation: string;
 }
 
 export interface MyPatient {
-  id: number;
-  patient_name: string;
-  family_members: FamilyMember[];
+  id: number; // connection id, NOT user id
+  name: string;
+  phone_number: string | null; // masked
+  status: string;
+  responded_at: string | null;
+  family_members: PatientFamilyMember[];
 }
 
 export type CaregiverStackParamList = {

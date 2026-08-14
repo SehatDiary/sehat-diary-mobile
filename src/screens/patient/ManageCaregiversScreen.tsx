@@ -24,7 +24,13 @@ import {
 } from "../../hooks/useCaregivers";
 import i18n from "../../i18n";
 
-type SheetStep = "phone" | "found" | "not_found" | "already_connected" | "sent";
+type SheetStep =
+  | "phone"
+  | "found"
+  | "not_found"
+  | "already_connected"
+  | "invite_pending"
+  | "sent";
 
 function daysUntil(dateStr: string): number {
   const diff = new Date(dateStr).getTime() - Date.now();
@@ -63,20 +69,20 @@ function CaregiverCard({
 }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const isPending = connection.status === "pending";
-  const displayName = connection.caregiver_name || connection.caregiver_phone_masked;
+  const displayName = connection.name || connection.phone_number || "?";
 
   return (
     <View style={styles.card}>
       <View style={styles.cardRow}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {(connection.caregiver_name || "?")[0].toUpperCase()}
+            {(connection.name || "?")[0].toUpperCase()}
           </Text>
         </View>
         <View style={styles.cardContent}>
           <Text style={styles.cardName}>{displayName}</Text>
           <Text style={styles.cardPhone}>
-            {connection.caregiver_phone_masked}
+            {connection.phone_number}
           </Text>
           <StatusBadge status={connection.status} />
           {isPending && (
@@ -158,10 +164,21 @@ function AddCaregiverSheet({
       onSuccess: (result) => {
         if (result.already_connected) {
           setStep("already_connected");
-        } else if (result.found) {
+        } else if (result.invite_pending) {
+          setStep("invite_pending");
+        } else if (result.registered) {
           setStep("found");
         } else {
           setStep("not_found");
+        }
+      },
+      onError: (err: unknown) => {
+        const resp = (err as { response?: { status?: number; data?: { error?: string; error_hindi?: string } } })
+          .response;
+        if (resp?.status === 429) {
+          Alert.alert(resp.data?.error_hindi ?? resp.data?.error ?? i18n.t("common.error"));
+        } else {
+          Alert.alert(i18n.t("common.error"));
         }
       },
     });
@@ -296,6 +313,27 @@ function AddCaregiverSheet({
             </View>
           )}
 
+          {step === "invite_pending" && (
+            <View style={styles.resultContainer}>
+              <Text style={styles.resultIconGray}>i</Text>
+              <Text style={styles.resultText}>
+                {i18n.t("caregivers.invitePendingInfo")}
+              </Text>
+              <Text style={styles.resultTextHi}>
+                {i18n.t("caregivers.invitePendingInfoHi")}
+              </Text>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: COLORS.textSecondary }]}
+                activeOpacity={0.7}
+                onPress={resetAndClose}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {i18n.t("caregivers.done")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {step === "already_connected" && (
             <View style={styles.resultContainer}>
               <Text style={styles.resultIconGray}>i</Text>
@@ -353,9 +391,9 @@ export default function ManageCaregiversScreen() {
     const message = isPending
       ? i18n.t("caregivers.cancelInviteConfirmMessage")
       : `${i18n.t("caregivers.removeConfirmMessage", {
-          name: connection.caregiver_name || connection.caregiver_phone_masked,
+          name: connection.name || connection.phone_number || "?",
         })}\n\n${i18n.t("caregivers.removeConfirmMessageHi", {
-          name: connection.caregiver_name || connection.caregiver_phone_masked,
+          name: connection.name || connection.phone_number || "?",
         })}`;
 
     Alert.alert(title, message, [

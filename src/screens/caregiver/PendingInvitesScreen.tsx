@@ -129,8 +129,12 @@ export default function PendingInvitesScreen() {
         setAcceptingId(null);
         navigation.navigate("Dashboard");
       },
-      onError: () => {
+      onError: (err: unknown) => {
         setAcceptingId(null);
+        const data = (err as { response?: { data?: { error?: string; error_hindi?: string } } })
+          .response?.data;
+        Alert.alert(data?.error_hindi ?? data?.error ?? i18n.t("common.error"));
+        refetch();
       },
     });
   };

@@ -3,6 +3,7 @@ import { Platform, Alert } from "react-native";
 import { updateFcmToken } from "../api/auth";
 import { markTaken } from "../api/adherence";
 import { navigate } from "../navigation/navigationRef";
+import { useAuthStore } from "../store/authStore";
 
 // Show notifications when app is in foreground
 Notifications.setNotificationHandler({
@@ -212,7 +213,14 @@ async function handleNotificationResponse(
   }
 
   if (isCaregiverInviteNotif(data)) {
-    navigate("PendingInvites", {});
+    // PendingInvites only exists in the caregiver navigator — a patient
+    // tapping an invite-related push lands on their caregivers screen instead
+    const role = useAuthStore.getState().user?.role;
+    if (role === "patient") {
+      navigate("ManageCaregivers", {});
+    } else {
+      navigate("PendingInvites", {});
+    }
     await Notifications.dismissNotificationAsync(
       response.notification.request.identifier
     ).catch(() => {});

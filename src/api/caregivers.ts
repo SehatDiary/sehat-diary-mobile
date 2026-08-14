@@ -4,11 +4,12 @@ import {
   PhoneLookupResult,
   CaregiverInvite,
   MyPatient,
+  SendInviteResult,
 } from "../types";
 
 export const getMyCaregivers = async (): Promise<CaregiverConnection[]> => {
   const { data } = await client.get("/caregivers/my_list");
-  return data.caregiver_connections;
+  return data.caregivers;
 };
 
 export const lookupPhone = async (
@@ -22,11 +23,11 @@ export const lookupPhone = async (
 
 export const sendInvite = async (
   phone: string
-): Promise<CaregiverConnection> => {
+): Promise<SendInviteResult> => {
   const { data } = await client.post("/caregivers/invite", {
     phone_number: phone,
   });
-  return data.caregiver_connection;
+  return data;
 };
 
 export const removeConnection = async (id: number): Promise<void> => {
@@ -35,7 +36,7 @@ export const removeConnection = async (id: number): Promise<void> => {
 
 export const getPendingInvites = async (): Promise<CaregiverInvite[]> => {
   const { data } = await client.get("/caregivers/pending_invites");
-  return data.invites;
+  return data.pending_invites;
 };
 
 export const acceptInvite = async (id: number): Promise<void> => {
