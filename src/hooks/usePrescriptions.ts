@@ -8,6 +8,34 @@ import {
   markReferralVisited,
 } from "../api/prescriptions";
 import { ConfirmPrescriptionResult } from "../types";
+import {
+  familyMembersKey,
+  familyMemberKey,
+  healthSessionsKey,
+  healthSessionKey,
+  pendingActionsKey,
+} from "./useFamilyMembers";
+import { todaysMedicinesKey, memberAdherenceKey } from "./useAdherence";
+
+// Confirming a prescription writes far more than the members list: it creates
+// the doctor visit, its medicines and a month or more of adherence logs. Every
+// cached screen that reads any of that has to refetch, or the caregiver taps
+// "save" and lands back on a pre-scan snapshot — the session card still
+// reading "0 prescriptions", the new session missing entirely. React
+// Navigation keeps those screens mounted, so nothing remounts to refetch on
+// its own.
+export const confirmPrescriptionQueryKeys = (
+  familyMemberId: number,
+  healthSessionId: number
+): unknown[][] => [
+  familyMembersKey(),
+  familyMemberKey(familyMemberId),
+  healthSessionsKey(familyMemberId),
+  healthSessionKey(familyMemberId, healthSessionId),
+  todaysMedicinesKey(),
+  memberAdherenceKey(familyMemberId),
+  pendingActionsKey(),
+];
 
 export const useUploadPrescription = () => {
   return useMutation({
@@ -56,8 +84,13 @@ export const useConfirmPrescription = () => {
         prescriptionId,
         confirmedData
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+    onSuccess: (_data, { familyMemberId, healthSessionId }) => {
+      for (const queryKey of confirmPrescriptionQueryKeys(
+        familyMemberId,
+        healthSessionId
+      )) {
+        queryClient.invalidateQueries({ queryKey });
+      }
     },
   });
 };
@@ -89,6 +122,10 @@ export const useMarkTestCompleted = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["healthSession"] });
       queryClient.invalidateQueries({ queryKey: ["doctorVisit"] });
+      // The dashboard counts this item as pending and stays mounted while the
+      // caregiver marks it done, so without this it keeps listing work that
+      // is already finished.
+      queryClient.invalidateQueries({ queryKey: pendingActionsKey() });
     },
   });
 };
@@ -109,6 +146,10 @@ export const useMarkReferralVisited = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["healthSession"] });
       queryClient.invalidateQueries({ queryKey: ["doctorVisit"] });
+      // The dashboard counts this item as pending and stays mounted while the
+      // caregiver marks it done, so without this it keeps listing work that
+      // is already finished.
+      queryClient.invalidateQueries({ queryKey: pendingActionsKey() });
     },
   });
 };
