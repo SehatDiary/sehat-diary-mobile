@@ -7,7 +7,12 @@ import {
   Referral,
 } from "../types";
 
-export const uploadImage = async (uri: string): Promise<{ url: string }> => {
+// The R2 bucket is private: `key` is the durable reference to send back when
+// creating a prescription, `url` is a presigned link (1 hour) for previewing
+// the upload. Never persist or re-send `url` — the signature expires.
+export const uploadImage = async (
+  uri: string
+): Promise<{ key: string; url: string }> => {
   const formData = new FormData();
   const filename = uri.split("/").pop() || "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
@@ -28,11 +33,11 @@ export const uploadImage = async (uri: string): Promise<{ url: string }> => {
 export const createPrescription = async (
   familyMemberId: number,
   healthSessionId: number,
-  imageUrl: string
+  imageKey: string
 ): Promise<ExtractionResult> => {
   const { data } = await client.post(
     `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescriptions`,
-    { image_url: imageUrl }
+    { image_key: imageKey }
   );
   return data;
 };

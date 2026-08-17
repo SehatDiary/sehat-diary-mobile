@@ -20,11 +20,11 @@ export const useUploadPrescription = () => {
       familyMemberId: number;
       healthSessionId: number;
     }) => {
-      const { url } = await uploadImage(uri);
+      const { key } = await uploadImage(uri);
       const result = await createPrescription(
         familyMemberId,
         healthSessionId,
-        url
+        key
       );
       return result;
     },
