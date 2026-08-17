@@ -29,9 +29,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearAuth: async () => {
-    await SecureStore.deleteItemAsync("auth_token");
-    await SecureStore.deleteItemAsync("user");
+    // State first, and the keychain deletes can never take the caller down
+    // with them. Awaiting them ahead of set() meant an unavailable keychain
+    // left user and token in memory — the app still rendering a signed-in
+    // stack over a dead session, which is the bug this guards — and the
+    // rejection reached the 401 interceptor, masking the original error.
     set({ user: null, token: null, isLoading: false });
+
+    try {
+      await SecureStore.deleteItemAsync("auth_token");
+      await SecureStore.deleteItemAsync("user");
+    } catch {
+      // The session is already gone in memory; a key left behind is refused
+      // by the API and cleared on the next attempt.
+    }
   },
 
   setLoading: (isLoading) => set({ isLoading }),

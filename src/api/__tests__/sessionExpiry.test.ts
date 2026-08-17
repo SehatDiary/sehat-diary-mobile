@@ -1,4 +1,4 @@
-import { shouldEndSession } from "../sessionExpiry";
+import { shouldEndSession, rejectionEndsCurrentSession } from "../sessionExpiry";
 
 describe("deciding when a 401 ends the session", () => {
   it("ends the session when the API rejects an authenticated request", () => {
@@ -22,6 +22,30 @@ describe("deciding when a 401 ends the session", () => {
 
   it("survives a request that never got a status or a url", () => {
     expect(shouldEndSession(undefined, "/family_members")).toBe(false);
+    // A 401 with no url is still an authenticated rejection; the token check
+    // below is what keeps it from touching anyone else's session.
     expect(shouldEndSession(401, undefined)).toBe(true);
+  });
+});
+
+describe("matching a rejection to the session that made it", () => {
+  it("ends the session whose token the rejected request carried", () => {
+    expect(rejectionEndsCurrentSession("Bearer abc123", "abc123")).toBe(true);
+  });
+
+  it("ignores a retry that went out after the session was already cleared", () => {
+    expect(rejectionEndsCurrentSession(undefined, null)).toBe(false);
+    expect(rejectionEndsCurrentSession("Bearer abc123", null)).toBe(false);
+  });
+
+  it("never lets a stale rejection wipe a session signed in since", () => {
+    // The in-flight retry carries the old token; the caregiver has already
+    // logged back in and holds a new one.
+    expect(rejectionEndsCurrentSession("Bearer old-token", "fresh-token")).toBe(false);
+  });
+
+  it("ignores a rejection that carried no credentials at all", () => {
+    expect(rejectionEndsCurrentSession(undefined, "abc123")).toBe(false);
+    expect(rejectionEndsCurrentSession("", "abc123")).toBe(false);
   });
 });

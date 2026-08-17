@@ -7,6 +7,7 @@ import {
   updateMe,
 } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
+import { clearCachedSession } from "../api/queryClient";
 
 export const useRequestOtp = () => {
   return useMutation({
@@ -32,6 +33,11 @@ export const useVerifyOtp = () => {
       otp: string;
     }) => verifyOtp(phone_number, otp),
     onSuccess: async (data) => {
+      // Whoever signs in starts with an empty cache, whatever happened to the
+      // session before them — a logout that failed mid-flight, an app killed
+      // while signed in. None of the query keys carry a user id, so this is
+      // the only thing standing between two accounts on one phone.
+      clearCachedSession();
       await setAuth(data.user, data.token);
     },
   });
@@ -44,6 +50,7 @@ export const useLogout = () => {
     mutationFn: logoutApi,
     onSettled: async () => {
       await clearAuth();
+      clearCachedSession();
     },
   });
 };

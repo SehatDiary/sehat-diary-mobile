@@ -13,3 +13,20 @@ export const shouldEndSession = (
 
   return !LOGIN_PATHS.some((path) => (url ?? "").includes(path));
 };
+
+// Whether the request that was rejected belongs to the session still held.
+//
+// React Query retries three times with backoff and does not cancel those
+// retries when the screens unmount, so a rejected session produces a small
+// burst of 401s — and after the first clear they go out with no token at all.
+// If one of them lands after the caregiver has signed back in, clearing again
+// would throw away the session they just created. A rejection can only end
+// the session it was actually sent with.
+export const rejectionEndsCurrentSession = (
+  authorizationHeader: unknown,
+  currentToken: string | null
+): boolean => {
+  if (!currentToken) return false;
+
+  return authorizationHeader === `Bearer ${currentToken}`;
+};
