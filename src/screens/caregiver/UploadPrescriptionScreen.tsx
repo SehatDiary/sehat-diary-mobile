@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -280,6 +281,7 @@ function ReviewState({
         style={styles.medicinesList}
         contentContainerStyle={styles.medicinesContent}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
       >
         {medicines.map((med, index) => {
           const isLow = med.confidence === "low";

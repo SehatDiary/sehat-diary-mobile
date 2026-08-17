@@ -5,16 +5,14 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
 import { useCreateFamilyMember } from "../../hooks/useFamilyMembers";
 import { CaregiverStackParamList } from "../../types";
+import FormScreen from "../../components/FormScreen";
 import i18n from "../../i18n";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "AddFamilyMember">;
@@ -69,10 +67,7 @@ export default function AddFamilyMemberScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backText}>{"←"}</Text>
@@ -80,7 +75,7 @@ export default function AddFamilyMemberScreen() {
         <Text style={styles.headerTitle}>{i18n.t("addMember.title")}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+      <FormScreen contentContainerStyle={styles.form}>
         <Text style={styles.label}>{i18n.t("addMember.name")} *</Text>
         <TextInput
           style={styles.input}
@@ -163,8 +158,8 @@ export default function AddFamilyMemberScreen() {
         {createMember.isError && (
           <Text style={styles.errorText}>{i18n.t("common.error")}</Text>
         )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScreen>
+    </View>
   );
 }
 
