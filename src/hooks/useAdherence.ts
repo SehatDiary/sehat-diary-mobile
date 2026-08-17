@@ -8,9 +8,16 @@ import {
   TodayMedicines,
 } from "../api/adherence";
 
+// See useFamilyMembers.ts for why keys are factories, not inline literals.
+export const todaysMedicinesKey = () => ["todaysMedicines"];
+export const memberAdherenceKey = (familyMemberId: number) => [
+  "memberAdherence",
+  familyMemberId,
+];
+
 export const useGetTodaysMedicines = () => {
   return useQuery({
-    queryKey: ["todaysMedicines"],
+    queryKey: todaysMedicinesKey(),
     queryFn: getTodaysMedicines,
   });
 };
@@ -21,8 +28,8 @@ export const useMarkTaken = () => {
   return useMutation({
     mutationFn: markTaken,
     onMutate: async (adherenceLogId) => {
-      await queryClient.cancelQueries({ queryKey: ["todaysMedicines"] });
-      const previous = queryClient.getQueryData<TodayMedicines>(["todaysMedicines"]);
+      await queryClient.cancelQueries({ queryKey: todaysMedicinesKey() });
+      const previous = queryClient.getQueryData<TodayMedicines>(todaysMedicinesKey());
 
       if (previous) {
         const updated = { ...previous };
@@ -31,18 +38,18 @@ export const useMarkTaken = () => {
             log.id === adherenceLogId ? { ...log, taken: true } : log
           );
         }
-        queryClient.setQueryData(["todaysMedicines"], updated);
+        queryClient.setQueryData(todaysMedicinesKey(), updated);
       }
 
       return { previous };
     },
     onError: (_err, _id, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(["todaysMedicines"], context.previous);
+        queryClient.setQueryData(todaysMedicinesKey(), context.previous);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["todaysMedicines"] });
+      queryClient.invalidateQueries({ queryKey: todaysMedicinesKey() });
     },
   });
 };
@@ -53,14 +60,14 @@ export const useMarkSnoozed = () => {
   return useMutation({
     mutationFn: markSnoozed,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["todaysMedicines"] });
+      queryClient.invalidateQueries({ queryKey: todaysMedicinesKey() });
     },
   });
 };
 
 export const useGetMemberAdherence = (familyMemberId: number) => {
   return useQuery({
-    queryKey: ["memberAdherence", familyMemberId],
+    queryKey: memberAdherenceKey(familyMemberId),
     queryFn: () => getMemberAdherence(familyMemberId),
   });
 };

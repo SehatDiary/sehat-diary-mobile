@@ -10,16 +10,33 @@ import {
   getPendingActions,
 } from "../api/familyMembers";
 
+// One factory per query key, used by both the query that reads it and every
+// mutation that invalidates it. Repeating the literals in both places looks
+// identical right up until an argument is added to one of them, and then a
+// mutation silently stops refreshing the screen it was meant to refresh.
+export const familyMembersKey = () => ["familyMembers"];
+export const familyMemberKey = (id: number) => ["familyMember", id];
+export const healthSessionsKey = (memberId: number) => [
+  "healthSessions",
+  memberId,
+];
+export const healthSessionKey = (memberId: number, sessionId: number) => [
+  "healthSession",
+  memberId,
+  sessionId,
+];
+export const pendingActionsKey = () => ["pendingActions"];
+
 export const useGetFamilyMembers = () => {
   return useQuery({
-    queryKey: ["familyMembers"],
+    queryKey: familyMembersKey(),
     queryFn: getFamilyMembers,
   });
 };
 
 export const useGetFamilyMember = (id: number) => {
   return useQuery({
-    queryKey: ["familyMember", id],
+    queryKey: familyMemberKey(id),
     queryFn: () => getFamilyMember(id),
   });
 };
@@ -30,7 +47,7 @@ export const useCreateFamilyMember = () => {
   return useMutation({
     mutationFn: createFamilyMember,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+      queryClient.invalidateQueries({ queryKey: familyMembersKey() });
     },
   });
 };
@@ -42,21 +59,21 @@ export const useUpdateFamilyMember = () => {
     mutationFn: ({ id, ...params }: { id: number } & Record<string, unknown>) =>
       updateFamilyMember(id, params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+      queryClient.invalidateQueries({ queryKey: familyMembersKey() });
     },
   });
 };
 
 export const useGetHealthSession = (memberId: number, sessionId: number) => {
   return useQuery({
-    queryKey: ["healthSession", memberId, sessionId],
+    queryKey: healthSessionKey(memberId, sessionId),
     queryFn: () => getHealthSession(memberId, sessionId),
   });
 };
 
 export const useGetHealthSessions = (memberId: number) => {
   return useQuery({
-    queryKey: ["healthSessions", memberId],
+    queryKey: healthSessionsKey(memberId),
     queryFn: () => getHealthSessions(memberId),
   });
 };
@@ -68,15 +85,15 @@ export const useCreateHealthSession = () => {
     mutationFn: ({ memberId, startedAt }: { memberId: number; startedAt: string }) =>
       createHealthSession(memberId, { started_at: startedAt }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["healthSessions", variables.memberId] });
-      queryClient.invalidateQueries({ queryKey: ["familyMember", variables.memberId] });
+      queryClient.invalidateQueries({ queryKey: healthSessionsKey(variables.memberId) });
+      queryClient.invalidateQueries({ queryKey: familyMemberKey(variables.memberId) });
     },
   });
 };
 
 export const useGetPendingActions = () => {
   return useQuery({
-    queryKey: ["pendingActions"],
+    queryKey: pendingActionsKey(),
     queryFn: getPendingActions,
   });
 };
