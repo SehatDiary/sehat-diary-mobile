@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useVerifyOtp, useRequestOtp } from "../../hooks/useAuth";
 import { COLORS, FONT_SIZES } from "../../constants";
+import FormScreen from "../../components/FormScreen";
 import i18n from "../../i18n";
 
 export default function VerifyOtpScreen({ route }: { route: any }) {
@@ -93,7 +94,7 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
   };
 
   return (
-    <View style={styles.container}>
+    <FormScreen contentContainerStyle={styles.container}>
       <Text style={styles.heading}>{i18n.t("auth.enterOtp")}</Text>
       <Text style={styles.phone}>{maskedPhone}</Text>
 
@@ -157,7 +158,7 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
             : i18n.t("auth.resendOtp")}
         </Text>
       </TouchableOpacity>
-    </View>
+    </FormScreen>
   );
 }
 
@@ -169,7 +170,7 @@ const DEFAULT_RESEND_COOLDOWN = 60;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: COLORS.white,
     paddingHorizontal: 24,
     justifyContent: "center",

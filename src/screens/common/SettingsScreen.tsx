@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as Notifications from "expo-notifications";
@@ -109,7 +110,11 @@ export default function SettingsScreen() {
         <Text style={styles.headerTitle}>{i18n.t("settings.title")}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+      >
         {user && (
           <>
             <Text style={styles.sectionLabel}>

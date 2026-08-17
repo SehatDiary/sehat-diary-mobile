@@ -11,6 +11,7 @@ import {
 import { useRequestOtp } from "../../hooks/useAuth";
 import { SignupRole } from "../../api/auth";
 import { COLORS, FONT_SIZES } from "../../constants";
+import FormScreen from "../../components/FormScreen";
 import i18n from "../../i18n";
 
 export default function RequestOtpScreen({ navigation }: { navigation: any }) {
@@ -43,7 +44,7 @@ export default function RequestOtpScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <View style={styles.container}>
+    <FormScreen contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Sehat Diary</Text>
         <Text style={styles.tagline}>{i18n.t("auth.tagline")}</Text>
@@ -115,13 +116,13 @@ export default function RequestOtpScreen({ navigation }: { navigation: any }) {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: COLORS.white,
     paddingHorizontal: 24,
     justifyContent: "center",
