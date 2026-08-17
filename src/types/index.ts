@@ -285,7 +285,11 @@ export interface LabReportResultData {
   patient_match_status: "matched" | "unmatched" | "skipped" | null;
   report_date: string | null;
   report_type: string | null;
+  // *_key values are stable R2 object keys; *_url values are presigned and
+  // expire after an hour, so never cache or persist them.
+  image_keys: string[];
   image_urls: string[];
+  pdf_key: string | null;
   pdf_url: string | null;
   analysis_status: LabAnalysisStatus;
   has_critical_findings: boolean;
