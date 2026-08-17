@@ -9,6 +9,26 @@ import {
 } from "../api/prescriptions";
 import { ConfirmPrescriptionResult } from "../types";
 
+// Confirming a prescription writes far more than the members list: it creates
+// the doctor visit, its medicines and a month or more of adherence logs. Every
+// cached screen that reads any of that has to refetch, or the caregiver taps
+// "save" and lands back on a pre-scan snapshot — the session card still
+// reading "0 prescriptions", the new session missing entirely. React
+// Navigation keeps those screens mounted, so nothing remounts to refetch on
+// its own.
+export const confirmPrescriptionQueryKeys = (
+  familyMemberId: number,
+  healthSessionId: number
+): unknown[][] => [
+  ["familyMembers"],
+  ["familyMember", familyMemberId],
+  ["healthSessions", familyMemberId],
+  ["healthSession", familyMemberId, healthSessionId],
+  ["todaysMedicines"],
+  ["memberAdherence", familyMemberId],
+  ["pendingActions"],
+];
+
 export const useUploadPrescription = () => {
   return useMutation({
     mutationFn: async ({
@@ -56,8 +76,13 @@ export const useConfirmPrescription = () => {
         prescriptionId,
         confirmedData
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+    onSuccess: (_data, { familyMemberId, healthSessionId }) => {
+      for (const queryKey of confirmPrescriptionQueryKeys(
+        familyMemberId,
+        healthSessionId
+      )) {
+        queryClient.invalidateQueries({ queryKey });
+      }
     },
   });
 };
