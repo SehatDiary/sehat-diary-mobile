@@ -32,6 +32,7 @@ export default function RequestOtpScreen({ navigation }: { navigation: any }) {
           navigation.navigate("VerifyOtp", {
             phone_number: fullPhone,
             dev_otp: data.otp,
+            resend_after: data.resend_after,
           });
         },
         onError: () => {
