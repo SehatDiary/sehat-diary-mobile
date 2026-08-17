@@ -12,10 +12,14 @@ import { COLORS, FONT_SIZES } from "../../constants";
 import i18n from "../../i18n";
 
 export default function VerifyOtpScreen({ route }: { route: any }) {
-  const { phone_number, dev_otp } = route.params;
+  const { phone_number, dev_otp, resend_after } = route.params;
+  // The server publishes its own cooldown — counting down from a local guess
+  // enables Resend early, which earns a 429 and spends one of the user's three
+  // hourly OTP attempts for nothing.
+  const resendCooldown = resend_after ?? DEFAULT_RESEND_COOLDOWN;
   const [otp, setOtp] = useState("");
   const inputRefs = useRef<(TextInput | null)[]>([]);
-  const [countdown, setCountdown] = useState(30);
+  const [countdown, setCountdown] = useState(resendCooldown);
   const [error, setError] = useState("");
   const verifyOtp = useVerifyOtp();
   const resendOtp = useRequestOtp();
@@ -84,7 +88,7 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
   };
 
   const handleResend = () => {
-    setCountdown(30);
+    setCountdown(resendCooldown);
     resendOtp.mutate({ phone_number });
   };
 
@@ -158,6 +162,10 @@ export default function VerifyOtpScreen({ route }: { route: any }) {
 }
 
 const OTP_LENGTH = 6;
+
+// Only used if the server response somehow omits resend_after; matches the
+// backend's OTP_RESEND_COOLDOWN.
+const DEFAULT_RESEND_COOLDOWN = 60;
 
 const styles = StyleSheet.create({
   container: {

@@ -22,7 +22,7 @@ beforeEach(resetMockClient);
 describe("auth contract", () => {
   it("requestOtp sends role only when provided and returns message/expires_in", async () => {
     mockClient.post.mockResolvedValue({
-      data: { message: "OTP sent", expires_in: 600, otp: "123456" },
+      data: { message: "OTP sent", expires_in: 1800, resend_after: 60, otp: "123456" },
     });
 
     const result = await requestOtp("+919999999999");
@@ -30,6 +30,11 @@ describe("auth contract", () => {
       phone_number: "+919999999999",
     });
     expect(result.message).toBe("OTP sent");
+    // The resend countdown must come from the server, not a local constant —
+    // a client that retries early earns a 429 and spends one of the user's
+    // three hourly OTP attempts.
+    expect(result.resend_after).toBe(60);
+    expect(result.expires_in).toBe(1800);
 
     await requestOtp("+919999999999", "patient");
     expect(mockClient.post).toHaveBeenLastCalledWith("/auth/request_otp", {

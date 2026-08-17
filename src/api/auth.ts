@@ -3,10 +3,22 @@ import { AuthResponse, User } from "../types";
 
 export type SignupRole = "caregiver" | "patient";
 
+export interface OtpRequestResult {
+  message: string;
+  /** Seconds until the code expires. */
+  expires_in: number;
+  /** Seconds until a resend is accepted — time the Resend button off THIS,
+   *  never a local constant: retrying early earns a 429 and consumes one of
+   *  the user's three hourly OTP attempts. */
+  resend_after: number;
+  /** Development only; never present in production. */
+  otp?: string;
+}
+
 export const requestOtp = async (
   phone_number: string,
   role?: SignupRole
-): Promise<{ message: string; otp?: string }> => {
+): Promise<OtpRequestResult> => {
   const body: Record<string, string> = { phone_number };
   if (role) body.role = role;
   const { data } = await client.post("/auth/request_otp", body);
