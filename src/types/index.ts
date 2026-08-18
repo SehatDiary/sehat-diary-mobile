@@ -466,7 +466,8 @@ export interface MyPatient {
 export type CaregiverStackParamList = {
   PendingInvites: undefined;
   Dashboard: undefined;
-  AddFamilyMember: undefined;
+  /** memberId present = editing an existing member; absent = adding one. */
+  AddFamilyMember: { memberId?: number } | undefined;
   FamilyMember: { memberId: number };
   SessionDetail: { memberId: number; sessionId: number };
   UploadPrescription: { memberId: number; sessionId: number };

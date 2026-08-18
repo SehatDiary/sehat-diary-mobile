@@ -103,6 +103,7 @@ export default {
     allClearHi: "\u0938\u092C \u0920\u0940\u0915 \u0939\u0948!",
   },
   familyMember: {
+    edit: "Edit",
     profile: "Profile",
     age: "Age",
     gender: "Gender",
@@ -119,6 +120,9 @@ export default {
     viewAdherence: "View medicine adherence",
   },
   addMember: {
+    editTitle: "Edit Family Member",
+    nameAndRelationRequired: "Name and relation are required.",
+    saveFailed: "Could not save. Please try again.",
     title: "Add Family Member",
     name: "Name",
     namePlaceholder: "Enter full name",
