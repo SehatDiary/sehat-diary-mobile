@@ -437,14 +437,17 @@ function LabReportCard({
   );
 }
 
+// Uploads are not gated on session status. A lab report routinely arrives days
+// after the consultation it belongs to, so refusing to file it against that
+// visit would push the caregiver into creating a second visit that never
+// happened. With the gate gone the empty and populated cases differ only by the
+// cards between the heading and the button, so they collapse into one branch.
 function LabReportsSection({
   memberId,
   sessionId,
-  isActive,
 }: {
   memberId: number;
   sessionId: number;
-  isActive: boolean;
 }) {
   const navigation = useNavigation<Nav>();
   const { data: labReports } = useGetLabReports(memberId, sessionId);
@@ -456,33 +459,12 @@ function LabReportsSection({
   // Auto-refresh every 5s when any report is still analyzing
   useAutoRefreshLabReports(memberId, sessionId, hasAnalyzing ?? false);
 
-  if (!labReports || labReports.length === 0) {
-    if (!isActive) return null;
-    return (
-      <View style={styles.labReportsSection}>
-        <Text style={styles.sectionHeading}>
-          {i18n.t("labReport.labReports")}
-        </Text>
-        <TouchableOpacity
-          style={styles.addLabReportButton}
-          onPress={() =>
-            navigation.navigate("UploadLabReport", { memberId, sessionId })
-          }
-        >
-          <Text style={styles.addLabReportText}>
-            {"\u{1F52C}"} {i18n.t("labReport.addLabReport")}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.labReportsSection}>
       <Text style={styles.sectionHeading}>
         {i18n.t("labReport.labReports")}
       </Text>
-      {labReports.map((report) => (
+      {labReports?.map((report) => (
         <LabReportCard
           key={report.id}
           report={report}
@@ -490,18 +472,18 @@ function LabReportsSection({
           sessionId={sessionId}
         />
       ))}
-      {isActive && (
-        <TouchableOpacity
-          style={styles.addLabReportButton}
-          onPress={() =>
-            navigation.navigate("UploadLabReport", { memberId, sessionId })
-          }
-        >
-          <Text style={styles.addLabReportText}>
-            {"\u{1F52C}"} {i18n.t("labReport.addLabReport")}
-          </Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.addLabReportButton}
+        accessibilityRole="button"
+        accessibilityLabel={i18n.t("labReport.addLabReport")}
+        onPress={() =>
+          navigation.navigate("UploadLabReport", { memberId, sessionId })
+        }
+      >
+        <Text style={styles.addLabReportText}>
+          {"\u{1F52C}"} {i18n.t("labReport.addLabReport")}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -565,6 +547,25 @@ export default function SessionDetailScreen() {
         </View>
       )}
 
+      {/* Scanning a prescription is what this app is for, so its control is
+          labelled, full width, and outside the ScrollView — a caregiver opening
+          a visit sees it without scrolling past a long list of medicines. It
+          previously sat in the corner as an unlabelled 📋+ circle, which read
+          as decoration: the button was reported as missing during review. */}
+      <TouchableOpacity
+        style={styles.addPrescriptionButton}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={i18n.t("session.addPrescription")}
+        onPress={() =>
+          navigation.navigate("UploadPrescription", { memberId, sessionId })
+        }
+      >
+        <Text style={styles.addPrescriptionText}>
+          {"\u{1F4CB}"} {i18n.t("session.addPrescription")}
+        </Text>
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={styles.content}>
         {doctorVisits.map((visit) => (
           <React.Fragment key={visit.id}>
@@ -591,24 +592,8 @@ export default function SessionDetailScreen() {
           ))
         )}
 
-        <LabReportsSection
-          memberId={memberId}
-          sessionId={sessionId}
-          isActive={session?.status === "active"}
-        />
+        <LabReportsSection memberId={memberId} sessionId={sessionId} />
       </ScrollView>
-
-      {session?.status === "active" && (
-        <TouchableOpacity
-          style={styles.uploadFab}
-          activeOpacity={0.8}
-          onPress={() =>
-            navigation.navigate("UploadPrescription", { memberId, sessionId })
-          }
-        >
-          <Text style={styles.uploadFabText}>{"\u{1F4CB}"} +</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -988,24 +973,20 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.medium,
     color: COLORS.textSecondary,
   },
-  uploadFab: {
-    position: "absolute",
-    right: 20,
-    bottom: 32,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  // Same shape as the lab report control so the screen reads consistently, in
+  // the stronger primary colour so the ranking between them is obvious: adding
+  // a prescription is the main action, adding a lab report the secondary one.
+  addPrescriptionButton: {
     backgroundColor: COLORS.primary,
-    justifyContent: "center",
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    marginHorizontal: 16,
+    marginBottom: 12,
   },
-  uploadFabText: {
-    fontSize: 20,
+  addPrescriptionText: {
     color: COLORS.white,
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "700",
   },
 });
