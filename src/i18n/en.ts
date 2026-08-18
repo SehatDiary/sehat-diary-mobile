@@ -76,10 +76,6 @@ export default {
   },
   familyMember: {
     profile: "Profile",
-    email: "Email",
-    namePlaceholder: "Your name",
-    emailPlaceholder: "Optional",
-    saveFailed: "Could not save your profile. Please try again.",
     age: "Age",
     gender: "Gender",
     relation: "Relation",
@@ -335,6 +331,9 @@ export default {
     language: "Language",
     profile: "Profile",
     name: "Name",
+    namePlaceholder: "Enter full name",
+    email: "Email",
+    emailPlaceholder: "Optional",
     phone: "Phone",
     role: "Role",
     notifications: "Notifications",
@@ -344,6 +343,7 @@ export default {
     signOutConfirmTitle: "Sign out?",
     signOutConfirmMessage:
       "You will need your phone number to sign back in.",
+    saveFailed: "Could not save your profile. Please try again.",
     roleCaregiver: "Caregiver",
     rolePatient: "Patient",
     roleSuperAdmin: "Admin",
