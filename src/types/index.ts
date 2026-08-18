@@ -203,6 +203,7 @@ export interface AdherenceLog {
   instructions_hi: string | null;
   dosage: string | null;
   frequency: string | null;
+  prescribed_medicine_id: number;
   taken_at: string;
   taken: boolean;
   notes: string | null;
@@ -212,12 +213,71 @@ export interface AdherenceLog {
 
 export type DoseStatus = "pending" | "taken" | "missed" | "snoozed";
 
+export type DrugReferenceStatus = "pending" | "ready" | "unavailable";
+
+/** sehat_diary/docs/API_CONTRACT.md — GET /prescribed_medicines/:id */
+export interface DrugReferenceText {
+  description: string | null;
+  usage: string | null;
+  side_effects: string | null;
+}
+
+export interface DrugReferenceContent extends DrugReferenceText {
+  drug_class: string | null;
+  generic_composition: { name: string; strength: string | null }[];
+  hindi: DrugReferenceText | null;
+  source: string;
+}
+
+export interface MedicineDetail {
+  id: number;
+  name: string;
+  dosage: string | null;
+  strength: string | null;
+  dose: string | null;
+  form: string | null;
+  frequency: string | null;
+  timing: string | null;
+  duration_days: number | null;
+  quantity_prescribed: number | null;
+  instructions_hi: string | null;
+  raw_text: string | null;
+  confidence: MedicineConfidence;
+  needs_schedule_input: boolean;
+  dosing_interval: DosingInterval;
+  dosing_weekday: number | null;
+  is_active: boolean;
+  stopped_at: string | null;
+  stopped_reason: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  /** Hours it actually reminds at, read off the schedule rather than re-derived. */
+  reminder_times: string[];
+  adherence_summary: {
+    window_days: number;
+    scheduled: number;
+    taken: number;
+    missed: number;
+  };
+  /** Tells "still fetching" apart from "nothing to show". */
+  drug_reference_status: DrugReferenceStatus;
+  drug_reference: DrugReferenceContent | null;
+  doctor_visit: {
+    id: number;
+    visit_date: string | null;
+    doctor_name: string | null;
+    health_session_id: number;
+    family_member_id: number;
+  } | null;
+}
+
 /** One dose in the 7-day history — sehat_diary/docs/API_CONTRACT.md. */
 export interface HistoryDose {
   id: number;
   medicine_name: string;
   dosage: string | null;
   instructions_hi: string | null;
+  prescribed_medicine_id: number;
   scheduled_at: string;
   /**
    * Derived by the server. A dose left pending past its grace period reads as
@@ -375,14 +435,9 @@ export type PatientStackParamList = {
     sessionId: number;
     doctorVisitId: number;
   };
-  MedicineDetail: {
-    name: string;
-    dosage: string | null;
-    frequency: string | null;
-    instructionsHi: string | null;
-    durationDays: number | null;
-    rawText: string | null;
-  };
+  // Addressed by id and fetched. It used to carry its whole content, which meant
+  // it could only ever show what the calling list already held.
+  MedicineDetail: { medicineId: number };
 };
 
 export interface CaregiverInvite {
@@ -430,6 +485,7 @@ export type CaregiverStackParamList = {
     sessionId: number;
     doctorVisit: DoctorVisit;
   };
+  MedicineDetail: { medicineId: number };
   MemberAdherence: {
     memberId: number;
     memberName: string;

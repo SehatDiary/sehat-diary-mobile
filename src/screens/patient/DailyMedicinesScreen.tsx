@@ -200,12 +200,7 @@ export default function DailyMedicinesScreen() {
 
   const openMedicineDetail = (log: AdherenceLog) => {
     navigation.navigate("MedicineDetail", {
-      name: log.medicine_name,
-      dosage: log.dosage,
-      frequency: log.frequency,
-      instructionsHi: log.instructions_hi,
-      durationDays: null,
-      rawText: null,
+      medicineId: log.prescribed_medicine_id,
     });
   };
 

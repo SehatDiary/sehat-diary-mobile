@@ -25,6 +25,7 @@ const RESPONSE: AdherenceHistory = {
       doses: [
         {
           id: 31,
+          prescribed_medicine_id: 12,
           medicine_name: "Amlodipine",
           dosage: "5mg",
           instructions_hi: "खाने के बाद लें",

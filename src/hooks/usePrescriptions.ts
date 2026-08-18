@@ -4,6 +4,9 @@ import {
   createPrescription,
   confirmPrescription,
   getDoctorVisit,
+  getMedicine,
+  stopMedicine,
+  restartMedicine,
   markTestCompleted,
   markReferralVisited,
 } from "../api/prescriptions";
@@ -15,7 +18,11 @@ import {
   healthSessionKey,
   pendingActionsKey,
 } from "./useFamilyMembers";
-import { todaysMedicinesKey, memberAdherenceKey } from "./useAdherence";
+import {
+  todaysMedicinesKey,
+  memberAdherenceKey,
+  memberAdherenceHistoryKey,
+} from "./useAdherence";
 
 // Confirming a prescription writes far more than the members list: it creates
 // the doctor visit, its medicines and a month or more of adherence logs. Every
@@ -153,3 +160,50 @@ export const useMarkReferralVisited = () => {
     },
   });
 };
+
+export const medicineKey = (medicineId: number) => ["medicine", medicineId];
+
+export const useGetMedicine = (medicineId: number) => {
+  return useQuery({
+    queryKey: medicineKey(medicineId),
+    queryFn: () => getMedicine(medicineId),
+  });
+};
+
+// Stopping and restarting both change what the patient's phone will do, so
+// every list that shows a medicine or a dose has to be refreshed — the medicine
+// itself, today's doses, the week, and the session it belongs to.
+export const medicineMutationKeys = (
+  medicineId: number,
+  familyMemberId?: number
+): unknown[][] => [
+  medicineKey(medicineId),
+  todaysMedicinesKey(),
+  ...(familyMemberId
+    ? [ memberAdherenceKey(familyMemberId), memberAdherenceHistoryKey(familyMemberId),
+        familyMemberKey(familyMemberId), healthSessionsKey(familyMemberId) ]
+    : []),
+];
+
+const useMedicineMutation = (
+  medicineId: number,
+  familyMemberId: number | undefined,
+  mutationFn: (id: number) => Promise<unknown>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => mutationFn(medicineId),
+    onSuccess: () => {
+      for (const queryKey of medicineMutationKeys(medicineId, familyMemberId)) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    },
+  });
+};
+
+export const useStopMedicine = (medicineId: number, familyMemberId?: number) =>
+  useMedicineMutation(medicineId, familyMemberId, stopMedicine);
+
+export const useRestartMedicine = (medicineId: number, familyMemberId?: number) =>
+  useMedicineMutation(medicineId, familyMemberId, restartMedicine);

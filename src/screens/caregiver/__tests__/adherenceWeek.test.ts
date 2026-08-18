@@ -12,6 +12,7 @@ const dose = (
   scheduled_at = "2026-08-18T08:00:00+05:30"
 ): HistoryDose => ({
   id: Math.floor(Math.random() * 100000),
+  prescribed_medicine_id: 12,
   medicine_name: "Amlodipine",
   dosage: "5mg",
   instructions_hi: null,

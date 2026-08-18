@@ -66,9 +66,20 @@ function formatDate(dateStr: string) {
   });
 }
 
+// Tappable, and registered in the caregiver stack — this row was a plain View,
+// so "medicine details on tap" worked from the patient's screens and not at all
+// from the caregiver's.
 function MedicineItem({ medicine }: { medicine: Medicine }) {
+  const navigation = useNavigation<Nav>();
+
   return (
-    <View style={styles.medicineCard}>
+    <TouchableOpacity
+      style={styles.medicineCard}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={medicine.name}
+      onPress={() => navigation.navigate("MedicineDetail", { medicineId: medicine.id })}
+    >
       <Text style={styles.medicineName}>{medicine.name}</Text>
       {medicine.dosage && (
         <View style={styles.medicineRow}>
@@ -98,7 +109,7 @@ function MedicineItem({ medicine }: { medicine: Medicine }) {
           <Text style={styles.instructionsText}>{medicine.instructions_hi}</Text>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 

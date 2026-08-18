@@ -116,12 +116,7 @@ export default function VisitDetailScreen() {
                 accessibilityRole="button"
                 onPress={() =>
                   navigation.navigate("MedicineDetail", {
-                    name: medicine.name,
-                    dosage: medicine.dosage,
-                    frequency: medicine.frequency,
-                    instructionsHi: medicine.instructions_hi,
-                    durationDays: medicine.duration_days,
-                    rawText: medicine.raw_text ?? null,
+                    medicineId: medicine.id,
                   })
                 }
               >
