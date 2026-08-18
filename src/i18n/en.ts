@@ -118,6 +118,7 @@ export default {
     prescriptions: "Prescriptions",
     medicines: "Medicines",
     noPrescriptions: "No prescriptions yet",
+    addPrescription: "Add Prescription",
     status: "Status",
     pending: "Pending",
     extracted: "Extracted",
