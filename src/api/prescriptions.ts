@@ -3,6 +3,7 @@ import {
   ConfirmPrescriptionResult,
   DoctorVisit,
   ExtractionResult,
+  MedicineDetail,
   PrescribedTest,
   Referral,
 } from "../types";
@@ -64,6 +65,33 @@ export const getDoctorVisit = async (
     `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/doctor_visits/${doctorVisitId}`
   );
   return data.doctor_visit;
+};
+
+export const getMedicine = async (
+  medicineId: number
+): Promise<MedicineDetail> => {
+  const { data } = await client.get(`/prescribed_medicines/${medicineId}`);
+  return data.prescribed_medicine;
+};
+
+export const stopMedicine = async (
+  medicineId: number,
+  reason?: string
+): Promise<MedicineDetail> => {
+  const { data } = await client.patch(
+    `/prescribed_medicines/${medicineId}/deactivate`,
+    reason ? { reason } : {}
+  );
+  return data.prescribed_medicine;
+};
+
+export const restartMedicine = async (
+  medicineId: number
+): Promise<MedicineDetail> => {
+  const { data } = await client.patch(
+    `/prescribed_medicines/${medicineId}/reactivate`
+  );
+  return data.prescribed_medicine;
 };
 
 export const markTestCompleted = async (
