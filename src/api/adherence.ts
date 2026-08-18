@@ -1,5 +1,5 @@
 import client from "./client";
-import { AdherenceLog, PatientCriticalLabReport } from "../types";
+import { AdherenceHistory, AdherenceLog, PatientCriticalLabReport } from "../types";
 
 export interface TodayMedicines {
   morning: AdherenceLog[];
@@ -34,6 +34,15 @@ export const getMemberAdherence = async (
 ): Promise<TodayMedicines> => {
   const { data } = await client.get(
     `/family_members/${familyMemberId}/adherence/today`
+  );
+  return data;
+};
+
+export const getMemberAdherenceHistory = async (
+  familyMemberId: number
+): Promise<AdherenceHistory> => {
+  const { data } = await client.get(
+    `/family_members/${familyMemberId}/adherence/history`
   );
   return data;
 };
