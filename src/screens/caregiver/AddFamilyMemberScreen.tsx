@@ -7,15 +7,20 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
-import { useCreateFamilyMember } from "../../hooks/useFamilyMembers";
+import {
+  useCreateFamilyMember,
+  useGetFamilyMember,
+  useUpdateFamilyMember,
+} from "../../hooks/useFamilyMembers";
 import { CaregiverStackParamList } from "../../types";
 import FormScreen from "../../components/FormScreen";
 import i18n from "../../i18n";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "AddFamilyMember">;
+type Route = RouteProp<CaregiverStackParamList, "AddFamilyMember">;
 
 const GENDER_OPTIONS = [
   { label: () => i18n.t("addMember.male"), value: "male" },
@@ -23,9 +28,19 @@ const GENDER_OPTIONS = [
   { label: () => i18n.t("addMember.other"), value: "other" },
 ];
 
+// One form for adding and for correcting. A separate edit screen would have the
+// same six fields and the same validation, and would drift from this one the
+// first time either changed.
 export default function AddFamilyMemberScreen() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
+  const memberId = route.params?.memberId;
+  const isEditing = memberId != null;
+
   const createMember = useCreateFamilyMember();
+  const updateMember = useUpdateFamilyMember();
+  const { data: existing } = useGetFamilyMember(memberId ?? 0, { enabled: isEditing });
+  const member = existing?.family_member;
 
   const [name, setName] = useState("");
   const [relation, setRelation] = useState("");
@@ -33,6 +48,18 @@ export default function AddFamilyMemberScreen() {
   const [gender, setGender] = useState<string | null>(null);
   const [conditionInput, setConditionInput] = useState("");
   const [conditions, setConditions] = useState<string[]>([]);
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Fills once, when the record arrives. Re-running on every render would
+  // overwrite whatever the caregiver is in the middle of typing.
+  if (isEditing && member && !prefilled) {
+    setName(member.name);
+    setRelation(member.relation);
+    setAge(member.age != null ? String(member.age) : "");
+    setGender(member.gender ?? null);
+    setConditions(member.chronic_conditions ?? []);
+    setPrefilled(true);
+  }
 
   const addCondition = () => {
     const trimmed = conditionInput.trim();
@@ -48,23 +75,33 @@ export default function AddFamilyMemberScreen() {
 
   const handleSave = () => {
     if (!name.trim() || !relation.trim()) {
-      Alert.alert(i18n.t("common.error"), "Name and relation are required.");
+      // Was a hardcoded English sentence, in a Hindi-first app.
+      Alert.alert(i18n.t("common.error"), i18n.t("addMember.nameAndRelationRequired"));
       return;
     }
 
-    createMember.mutate(
-      {
-        name: name.trim(),
-        relation: relation.trim(),
-        age: age ? parseInt(age, 10) : undefined,
-        gender: gender ?? undefined,
-        chronic_conditions: conditions.length > 0 ? conditions : undefined,
-      },
-      {
-        onSuccess: () => navigation.goBack(),
-      }
-    );
+    const details = {
+      name: name.trim(),
+      relation: relation.trim(),
+      age: age ? parseInt(age, 10) : undefined,
+      gender: gender ?? undefined,
+      // Sent even when empty, so clearing the last condition actually clears it.
+      chronic_conditions: conditions,
+    };
+
+    const onSettled = {
+      onSuccess: () => navigation.goBack(),
+      onError: () => Alert.alert(i18n.t("addMember.saveFailed")),
+    };
+
+    if (isEditing) {
+      updateMember.mutate({ id: memberId, ...details }, onSettled);
+    } else {
+      createMember.mutate(details, onSettled);
+    }
   };
+
+  const isSaving = createMember.isPending || updateMember.isPending;
 
   return (
     <View style={styles.container}>
@@ -72,7 +109,9 @@ export default function AddFamilyMemberScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backText}>{"←"}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{i18n.t("addMember.title")}</Text>
+        <Text style={styles.headerTitle}>
+          {isEditing ? i18n.t("addMember.editTitle") : i18n.t("addMember.title")}
+        </Text>
       </View>
 
       <FormScreen contentContainerStyle={styles.form}>
@@ -146,12 +185,12 @@ export default function AddFamilyMemberScreen() {
         )}
 
         <TouchableOpacity
-          style={[styles.saveButton, createMember.isPending && styles.saveButtonDisabled]}
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={createMember.isPending}
+          disabled={isSaving}
         >
           <Text style={styles.saveText}>
-            {createMember.isPending ? i18n.t("addMember.saving") : i18n.t("addMember.save")}
+            {isSaving ? i18n.t("addMember.saving") : i18n.t("addMember.save")}
           </Text>
         </TouchableOpacity>
 

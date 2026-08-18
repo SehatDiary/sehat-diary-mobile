@@ -34,10 +34,14 @@ export const useGetFamilyMembers = () => {
   });
 };
 
-export const useGetFamilyMember = (id: number) => {
+export const useGetFamilyMember = (
+  id: number,
+  options: { enabled?: boolean } = {}
+) => {
   return useQuery({
     queryKey: familyMemberKey(id),
     queryFn: () => getFamilyMember(id),
+    enabled: options.enabled ?? true,
   });
 };
 
@@ -58,8 +62,11 @@ export const useUpdateFamilyMember = () => {
   return useMutation({
     mutationFn: ({ id, ...params }: { id: number } & Record<string, unknown>) =>
       updateFamilyMember(id, params),
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
+      // The detail screen reads familyMemberKey, so invalidating only the list
+      // left the screen the caregiver was looking at showing the old values.
       queryClient.invalidateQueries({ queryKey: familyMembersKey() });
+      queryClient.invalidateQueries({ queryKey: familyMemberKey(id) });
     },
   });
 };

@@ -131,6 +131,16 @@ export default function FamilyMemberScreen() {
           <Text style={styles.backText}>{"←"}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{member.name}</Text>
+        {/* A visible control, not a hidden long-press: correcting a typo in a
+            parent's name should not be something you have to discover. */}
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => navigation.navigate("AddFamilyMember", { memberId })}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t("familyMember.edit")}
+        >
+          <Text style={styles.editButtonText}>{i18n.t("familyMember.edit")}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Profile Section */}
@@ -266,6 +276,19 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xlarge,
     fontWeight: "bold",
     color: COLORS.white,
+    flex: 1,
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.white,
+  },
+  editButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.small,
+    fontWeight: "600",
   },
   profileCard: {
     backgroundColor: COLORS.white,
