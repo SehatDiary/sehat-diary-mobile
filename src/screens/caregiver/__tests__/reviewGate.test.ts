@@ -1,10 +1,23 @@
 import {
   canConfirm,
+  countMissingFrequency,
+  countMissingName,
   countUnreviewedLowConfidence,
   isMeaningfulEdit,
+  needsFrequency,
 } from "../reviewGate";
 
-const med = (confidence: "high" | "medium" | "low") => ({ confidence });
+// Confirmable by default, so each test varies only the thing it is about.
+const med = (
+  confidence: "high" | "medium" | "low",
+  overrides: Record<string, unknown> = {}
+) => ({
+  confidence,
+  name: "Amlodipine",
+  frequency: "once daily",
+  dosing_interval: "daily" as const,
+  ...overrides,
+});
 
 describe("low-confidence review gate", () => {
   it("blocks confirmation while a low-confidence row is unreviewed", () => {
@@ -36,8 +49,44 @@ describe("low-confidence review gate", () => {
     expect(countUnreviewedLowConfidence(medicines, [1])).toBe(1);
   });
 
-  it("allows confirmation for an empty extraction", () => {
-    expect(canConfirm([], [])).toBe(true);
+  it("blocks confirmation when every row has been deleted", () => {
+    // Rows can now be removed, and confirming nothing is not a thing to do —
+    // the server rejects an empty medicines list anyway.
+    expect(canConfirm([], [])).toBe(false);
+  });
+});
+
+describe("a schedule the app can actually place", () => {
+  it("blocks a row whose frequency was never stated", () => {
+    // The server refuses to invent a schedule and flags the medicine instead,
+    // so a row confirmed blank here reminds nobody, silently.
+    const medicines = [med("high", { frequency: null })];
+
+    expect(countMissingFrequency(medicines)).toBe(1);
+    expect(canConfirm(medicines, [])).toBe(false);
+  });
+
+  it("treats whitespace as missing", () => {
+    expect(needsFrequency({ frequency: "   ", dosing_interval: "daily" })).toBe(true);
+  });
+
+  it("exempts an as-needed medicine", () => {
+    // "SOS" schedules nothing by design — a complete instruction, not a gap.
+    const medicines = [med("high", { frequency: null, dosing_interval: "as_needed" })];
+
+    expect(countMissingFrequency(medicines)).toBe(0);
+    expect(canConfirm(medicines, [])).toBe(true);
+  });
+
+  it("blocks a row left without a name", () => {
+    const medicines = [med("high"), med("high", { name: "  " })];
+
+    expect(countMissingName(medicines)).toBe(1);
+    expect(canConfirm(medicines, [])).toBe(false);
+  });
+
+  it("allows a fully specified row", () => {
+    expect(canConfirm([med("high")], [])).toBe(true);
   });
 });
 
