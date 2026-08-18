@@ -441,6 +441,8 @@ export type CaregiverStackParamList = {
 // Extraction response — sehat_diary/docs/API_CONTRACT.md (POST .../prescriptions).
 export type MedicineConfidence = "high" | "medium" | "low";
 
+export type DosingInterval = "daily" | "weekly" | "alternate_day" | "as_needed";
+
 export interface ExtractedMedicine {
   name: string;
   // Always present and valid: the server normalises an absent or unreadable
@@ -458,6 +460,10 @@ export interface ExtractedMedicine {
   instructions_hi?: string | null;
   hindi_explanation?: string | null;
   english_explanation?: string | null;
+  /** How often across days, as opposed to how many times within one. */
+  dosing_interval?: DosingInterval | null;
+  /** 0-6, 0 = Sunday. Only meaningful when dosing_interval is "weekly". */
+  dosing_weekday?: number | null;
 }
 
 export interface ExtractionResult {

@@ -19,9 +19,28 @@ import {
   useUploadPrescription,
   useConfirmPrescription,
 } from "../../hooks/usePrescriptions";
-import { CaregiverStackParamList, ExtractedMedicine } from "../../types";
+import {
+  CaregiverStackParamList,
+  DosingInterval,
+  ExtractedMedicine,
+} from "../../types";
 import i18n from "../../i18n";
-import { countUnreviewedLowConfidence, isMeaningfulEdit } from "./reviewGate";
+import {
+  canConfirm,
+  countMissingFrequency,
+  countMissingName,
+  countUnreviewedLowConfidence,
+  isMeaningfulEdit,
+  needsFrequency,
+} from "./reviewGate";
+import {
+  blankMedicine,
+  FREQUENCY_OPTIONS,
+  INTERVAL_OPTIONS,
+  Option,
+  TIMING_OPTIONS,
+  WEEKDAY_OPTIONS,
+} from "./medicineOptions";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "UploadPrescription">;
 type Route = RouteProp<CaregiverStackParamList, "UploadPrescription">;
@@ -97,15 +116,61 @@ export default function UploadPrescriptionScreen() {
     );
   };
 
-  const updateMedicineName = (index: number, name: string) => {
+  const updateMedicineField = (
+    index: number,
+    patch: Partial<ExtractedMedicine>
+  ) => {
     setMedicines((prev) =>
-      prev.map((m, i) => (i === index ? { ...m, name } : m))
+      prev.map((m, i) => (i === index ? { ...m, ...patch } : m))
     );
-    // Correcting a row counts as reviewing it — but only a real correction,
-    // not a keystroke that gets undone.
-    if (isMeaningfulEdit(extractedNames[index], name)) {
-      markReviewed(index);
+
+    // Correcting a row counts as reviewing it — but only a real correction to
+    // the name, not a keystroke that gets undone. Editing a schedule field is
+    // also a review: the caregiver has plainly looked at the row.
+    if (patch.name !== undefined) {
+      if (isMeaningfulEdit(extractedNames[index], patch.name)) {
+        markReviewed(index);
+      }
+      return;
     }
+
+    markReviewed(index);
+  };
+
+  const addMedicine = () => {
+    setMedicines((prev) => [...prev, blankMedicine()]);
+    // extractedNames is indexed alongside medicines, so it has to grow too or a
+    // later removal would shift the two out of step.
+    setExtractedNames((prev) => [...prev, ""]);
+  };
+
+  const removeMedicine = (index: number) => {
+    const medicine = medicines[index];
+
+    Alert.alert(
+      i18n.t("prescription.removeMedicineTitle"),
+      i18n.t("prescription.removeMedicineMessage", {
+        medicine: medicine?.name || i18n.t("prescription.medicineName"),
+      }),
+      [
+        { text: i18n.t("common.cancel"), style: "cancel" },
+        {
+          text: i18n.t("prescription.removeMedicine"),
+          style: "destructive",
+          onPress: () => {
+            setMedicines((prev) => prev.filter((_, i) => i !== index));
+            // Review marks are positional, so they have to shift with the rows
+            // or a later row inherits an earlier one's clearance.
+            setReviewedIndexes((prev) =>
+              prev
+                .filter((reviewed) => reviewed !== index)
+                .map((reviewed) => (reviewed > index ? reviewed - 1 : reviewed))
+            );
+            setExtractedNames((prev) => prev.filter((_, i) => i !== index));
+          },
+        },
+      ]
+    );
   };
 
   const markReviewed = (index: number) => {
@@ -184,7 +249,9 @@ export default function UploadPrescriptionScreen() {
           medicines={medicines}
           reviewedIndexes={reviewedIndexes}
           unreviewedLowCount={unreviewedLowCount}
-          onUpdateName={updateMedicineName}
+          onUpdateField={updateMedicineField}
+          onAdd={addMedicine}
+          onRemove={removeMedicine}
           onMarkReviewed={markReviewed}
           onConfirm={handleConfirm}
           isConfirming={confirmPrescription.isPending}
@@ -251,23 +318,79 @@ function ProcessingState({ imageUri }: { imageUri: string | null }) {
   );
 }
 
+// Chips rather than a native picker: the options are few, all of them fit on
+// screen, and a caregiver correcting a misread dose should see every choice at
+// once instead of opening a wheel to discover them.
+function OptionRow<T extends string | number>({
+  label,
+  options,
+  selected,
+  onSelect,
+  required,
+}: {
+  label: string;
+  options: Option<T>[];
+  selected: T | null | undefined;
+  onSelect: (value: T) => void;
+  required?: boolean;
+}) {
+  return (
+    <View style={styles.optionBlock}>
+      <Text style={[styles.fieldLabel, required && styles.fieldLabelRequired]}>
+        {label}
+        {required ? " *" : ""}
+      </Text>
+      <View style={styles.optionRow}>
+        {options.map((option) => {
+          const isSelected = option.value === selected;
+
+          return (
+            <TouchableOpacity
+              key={String(option.value)}
+              style={[styles.chip, isSelected && styles.chipSelected]}
+              onPress={() => onSelect(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+            >
+              <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                {i18n.t(option.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function ReviewState({
   medicines,
   reviewedIndexes,
   unreviewedLowCount,
-  onUpdateName,
+  onUpdateField,
   onMarkReviewed,
+  onAdd,
+  onRemove,
   onConfirm,
   isConfirming,
 }: {
   medicines: ExtractedMedicine[];
   reviewedIndexes: number[];
   unreviewedLowCount: number;
-  onUpdateName: (index: number, name: string) => void;
+  onUpdateField: (index: number, patch: Partial<ExtractedMedicine>) => void;
   onMarkReviewed: (index: number) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
   onConfirm: () => void;
   isConfirming: boolean;
 }) {
+  // A row missing a name or a frequency cannot be saved. The scheduler places
+  // reminders from frequency, and the server refuses to invent one — so a row
+  // confirmed blank would sit in the medicine list reminding nobody.
+  const incompleteCount =
+    countMissingFrequency(medicines) + countMissingName(medicines);
+  const confirmable = canConfirm(medicines, reviewedIndexes);
+
   return (
     <View style={styles.reviewContainer}>
       <Text style={styles.reviewTitle}>
@@ -310,7 +433,9 @@ function ReviewState({
                   </Text>
                 </View>
               )}
-              {isLow && med.raw_text && (
+              {/* Shown on every row, not only uncertain ones: this is the text
+                  the caregiver is checking the fields against. */}
+              {med.raw_text && (
                 <View style={styles.rawTextBox}>
                   <Text style={styles.rawTextLabel}>
                     {i18n.t("prescription.asWritten")}
@@ -319,39 +444,102 @@ function ReviewState({
                 </View>
               )}
               <Text style={styles.fieldLabel}>
-                {i18n.t("prescription.medicineName")}
+                {i18n.t("prescription.medicineName")} *
               </Text>
               <TextInput
                 style={[styles.nameInput, isLow && styles.nameInputLow]}
                 value={med.name}
-                onChangeText={(text) => onUpdateName(index, text)}
+                onChangeText={(text) => onUpdateField(index, { name: text })}
+                placeholder={i18n.t("prescription.nameRequired")}
               />
-              {med.dosage && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>
-                    {i18n.t("session.dosage")}
+
+              <View style={styles.inlineFields}>
+                <View style={styles.inlineField}>
+                  <Text style={styles.fieldLabel}>
+                    {i18n.t("prescription.strength")}
                   </Text>
-                  <Text style={styles.detailValue}>{med.dosage}</Text>
+                  <TextInput
+                    style={styles.smallInput}
+                    value={med.strength ?? ""}
+                    onChangeText={(text) =>
+                      onUpdateField(index, { strength: text })
+                    }
+                  />
                 </View>
-              )}
-              {med.frequency && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>
-                    {i18n.t("session.frequency")}
+                <View style={styles.inlineField}>
+                  <Text style={styles.fieldLabel}>
+                    {i18n.t("prescription.dose")}
                   </Text>
-                  <Text style={styles.detailValue}>{med.frequency}</Text>
+                  <TextInput
+                    style={styles.smallInput}
+                    value={med.dose ?? ""}
+                    onChangeText={(text) => onUpdateField(index, { dose: text })}
+                  />
                 </View>
-              )}
-              {med.duration_days && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>
-                    {i18n.t("session.duration")}
+                <View style={styles.inlineField}>
+                  <Text style={styles.fieldLabel}>
+                    {i18n.t("prescription.durationDays")}
                   </Text>
-                  <Text style={styles.detailValue}>
-                    {med.duration_days} {i18n.t("session.days")}
-                  </Text>
+                  <TextInput
+                    style={styles.smallInput}
+                    value={med.duration_days ? String(med.duration_days) : ""}
+                    onChangeText={(text) =>
+                      onUpdateField(index, {
+                        duration_days: text.replace(/\D/g, "")
+                          ? Number(text.replace(/\D/g, ""))
+                          : null,
+                      })
+                    }
+                    keyboardType="number-pad"
+                  />
                 </View>
+              </View>
+
+              {/* Every field below is one the reminder scheduler reads, so all of
+                  them are predefined values rather than free text: a typed word
+                  the server does not recognise would save, display, and quietly
+                  never remind anyone. */}
+              <OptionRow
+                label={i18n.t("prescription.howOften")}
+                options={FREQUENCY_OPTIONS}
+                selected={med.frequency}
+                onSelect={(frequency) => onUpdateField(index, { frequency })}
+                required={needsFrequency(med)}
+              />
+
+              <OptionRow
+                label={i18n.t("prescription.whenToTake")}
+                options={TIMING_OPTIONS}
+                selected={med.timing}
+                onSelect={(timing) => onUpdateField(index, { timing })}
+              />
+
+              <OptionRow
+                label={i18n.t("prescription.intervalDaily")}
+                options={INTERVAL_OPTIONS}
+                selected={med.dosing_interval ?? "daily"}
+                onSelect={(dosing_interval) =>
+                  onUpdateField(index, {
+                    dosing_interval: dosing_interval as DosingInterval,
+                    // A weekday only means anything for a weekly dose; leaving a
+                    // stale one behind would send the server a contradiction.
+                    dosing_weekday:
+                      dosing_interval === "weekly" ? med.dosing_weekday ?? 0 : null,
+                  })
+                }
+              />
+
+              {med.dosing_interval === "weekly" && (
+                <OptionRow
+                  label={i18n.t("prescription.whichDay")}
+                  options={WEEKDAY_OPTIONS}
+                  selected={med.dosing_weekday ?? 0}
+                  onSelect={(dosing_weekday) =>
+                    onUpdateField(index, { dosing_weekday })
+                  }
+                />
               )}
+
               {med.instructions_hi && (
                 <View style={styles.instructionsBox}>
                   <Text style={styles.instructionsLabel}>
@@ -362,40 +550,64 @@ function ReviewState({
                   </Text>
                 </View>
               )}
-              {isLow && (
-                <TouchableOpacity
-                  style={[
-                    styles.reviewedButton,
-                    isReviewed && styles.reviewedButtonDone,
-                  ]}
-                  onPress={() => onMarkReviewed(index)}
-                  disabled={isReviewed}
-                  accessibilityRole="button"
-                >
-                  <Text
+
+              <View style={styles.cardActions}>
+                {isLow && (
+                  <TouchableOpacity
                     style={[
-                      styles.reviewedButtonText,
-                      isReviewed && styles.reviewedButtonTextDone,
+                      styles.reviewedButton,
+                      isReviewed && styles.reviewedButtonDone,
                     ]}
+                    onPress={() => onMarkReviewed(index)}
+                    disabled={isReviewed}
+                    accessibilityRole="button"
                   >
-                    {isReviewed
-                      ? `✓ ${i18n.t("prescription.reviewed")}`
-                      : i18n.t("prescription.markReviewed")}
+                    <Text
+                      style={[
+                        styles.reviewedButtonText,
+                        isReviewed && styles.reviewedButtonTextDone,
+                      ]}
+                    >
+                      {isReviewed
+                        ? `✓ ${i18n.t("prescription.reviewed")}`
+                        : i18n.t("prescription.markReviewed")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => onRemove(index)}
+                  accessibilityRole="button"
+                  accessibilityLabel={i18n.t("prescription.removeMedicine")}
+                >
+                  <Text style={styles.removeButtonText}>
+                    {i18n.t("prescription.removeMedicine")}
                   </Text>
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
           );
         })}
+
+        <TouchableOpacity
+          style={styles.addMedicineButton}
+          onPress={onAdd}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t("prescription.addMedicine")}
+        >
+          <Text style={styles.addMedicineText}>
+            {i18n.t("prescription.addMedicine")}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <TouchableOpacity
         style={[
           styles.confirmButton,
-          (isConfirming || unreviewedLowCount > 0) && styles.confirmButtonDisabled,
+          (isConfirming || !confirmable) && styles.confirmButtonDisabled,
         ]}
         onPress={onConfirm}
-        disabled={isConfirming || unreviewedLowCount > 0}
+        disabled={isConfirming || !confirmable}
       >
         <Text style={styles.confirmText}>
           {isConfirming
@@ -404,7 +616,9 @@ function ReviewState({
               ? i18n.t("prescription.unreviewedCount", {
                   count: unreviewedLowCount,
                 })
-              : i18n.t("prescription.confirmMedicines")}
+              : incompleteCount > 0
+                ? i18n.t("prescription.fixBeforeSaving", { count: incompleteCount })
+                : i18n.t("prescription.confirmMedicines")}
         </Text>
       </TouchableOpacity>
     </View>
@@ -431,6 +645,91 @@ function ErrorState({
 }
 
 const styles = StyleSheet.create({
+  optionBlock: {
+    marginTop: 12,
+  },
+  optionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 6,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    backgroundColor: COLORS.white,
+  },
+  chipSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
+  },
+  chipText: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.text,
+  },
+  chipTextSelected: {
+    color: COLORS.white,
+    fontWeight: "600",
+  },
+  fieldLabelRequired: {
+    color: COLORS.error,
+    fontWeight: "700",
+  },
+  inlineFields: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+  },
+  inlineField: {
+    flex: 1,
+  },
+  smallInput: {
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: FONT_SIZES.small,
+    color: COLORS.text,
+    backgroundColor: COLORS.white,
+    marginTop: 6,
+  },
+  cardActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 14,
+    gap: 8,
+  },
+  removeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+  },
+  removeButtonText: {
+    color: COLORS.error,
+    fontSize: FONT_SIZES.small,
+    fontWeight: "600",
+  },
+  addMedicineButton: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: COLORS.primary,
+    alignItems: "center",
+  },
+  addMedicineText: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
