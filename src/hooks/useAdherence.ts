@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getTodaysMedicines,
   getMemberAdherence,
+  getMemberAdherenceHistory,
   markTaken,
   markSnoozed,
   getCriticalLabReports,
@@ -12,6 +13,10 @@ import {
 export const todaysMedicinesKey = () => ["todaysMedicines"];
 export const memberAdherenceKey = (familyMemberId: number) => [
   "memberAdherence",
+  familyMemberId,
+];
+export const memberAdherenceHistoryKey = (familyMemberId: number) => [
+  "memberAdherenceHistory",
   familyMemberId,
 ];
 
@@ -69,6 +74,29 @@ export const useGetMemberAdherence = (familyMemberId: number) => {
   return useQuery({
     queryKey: memberAdherenceKey(familyMemberId),
     queryFn: () => getMemberAdherence(familyMemberId),
+  });
+};
+
+export const useGetMemberAdherenceHistory = (familyMemberId: number) => {
+  return useQuery({
+    queryKey: memberAdherenceHistoryKey(familyMemberId),
+    queryFn: () => getMemberAdherenceHistory(familyMemberId),
+  });
+};
+
+// Correcting a dose from the history screen. Deliberately separate from
+// useMarkTaken: that one optimistically rewrites today's grouped list, a shape
+// this screen does not use, and it invalidates only today's key.
+export const useCorrectDose = (familyMemberId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: markTaken,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: memberAdherenceHistoryKey(familyMemberId) });
+      queryClient.invalidateQueries({ queryKey: memberAdherenceKey(familyMemberId) });
+      queryClient.invalidateQueries({ queryKey: todaysMedicinesKey() });
+    },
   });
 };
 

@@ -210,6 +210,43 @@ export interface AdherenceLog {
   reminder_count: number;
 }
 
+export type DoseStatus = "pending" | "taken" | "missed" | "snoozed";
+
+/** One dose in the 7-day history — sehat_diary/docs/API_CONTRACT.md. */
+export interface HistoryDose {
+  id: number;
+  medicine_name: string;
+  dosage: string | null;
+  instructions_hi: string | null;
+  scheduled_at: string;
+  /**
+   * Derived by the server. A dose left pending past its grace period reads as
+   * missed, because the job that would have written that may never have run.
+   */
+  status: DoseStatus;
+  /** What the row actually stores, before that derivation. */
+  recorded_status: DoseStatus;
+  marked_late: boolean;
+  acknowledged_at: string | null;
+  reminder_count: number;
+  notes: string | null;
+  /** Still open, and inside the window the caregiver can correct. */
+  correctable: boolean;
+}
+
+export interface HistoryDay {
+  date: string;
+  scheduled: number;
+  taken: number;
+  missed: number;
+  doses: HistoryDose[];
+}
+
+export interface AdherenceHistory {
+  /** Always 7, oldest first, today last. Days with no doses are included. */
+  days: HistoryDay[];
+}
+
 export interface OtpRequest {
   phone_number: string;
 }
