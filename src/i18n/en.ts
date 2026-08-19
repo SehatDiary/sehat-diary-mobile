@@ -195,6 +195,7 @@ export default {
     summaryHi: "Summary (Hindi)",
     summaryEn: "Summary (English)",
     medicinesCount: "%{count} medicines prescribed",
+    thenPhase: "then",
     testsOrdered: "Tests Ordered",
     referrals: "Referrals",
     instructions: "Instructions",
