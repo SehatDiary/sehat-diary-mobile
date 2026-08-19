@@ -33,6 +33,7 @@ import {
 } from "../../types";
 import OriginalScans from "./OriginalScans";
 import i18n from "../../i18n";
+import { doseInstruction } from "../../i18n/instruction";
 import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "SessionDetail">;
@@ -102,12 +103,12 @@ function MedicineItem({ medicine }: { medicine: Medicine }) {
           </Text>
         </View>
       )}
-      {medicine.instructions_hi && (
+      {doseInstruction(medicine) && (
         <View style={styles.instructionsBox}>
           <Text style={styles.instructionsLabel}>
             {i18n.t("session.instructions")}
           </Text>
-          <Text style={styles.instructionsText}>{medicine.instructions_hi}</Text>
+          <Text style={styles.instructionsText}>{doseInstruction(medicine)}</Text>
         </View>
       )}
     </TouchableOpacity>

@@ -48,6 +48,7 @@ export interface Medicine {
   frequency: string | null;
   duration_days: number | null;
   instructions_hi: string | null;
+  instructions_en: string | null;
   start_date: string | null;
   end_date: string | null;
   confidence: MedicineConfidence;
@@ -213,6 +214,7 @@ export interface AdherenceLog {
   id: number;
   medicine_name: string;
   instructions_hi: string | null;
+  instructions_en: string | null;
   dosage: string | null;
   frequency: string | null;
   prescribed_medicine_id: number;
@@ -253,6 +255,7 @@ export interface MedicineDetail {
   duration_days: number | null;
   quantity_prescribed: number | null;
   instructions_hi: string | null;
+  instructions_en: string | null;
   raw_text: string | null;
   confidence: MedicineConfidence;
   needs_schedule_input: boolean;
@@ -289,6 +292,7 @@ export interface HistoryDose {
   medicine_name: string;
   dosage: string | null;
   instructions_hi: string | null;
+  instructions_en: string | null;
   prescribed_medicine_id: number;
   scheduled_at: string;
   /**
@@ -547,6 +551,7 @@ export interface ExtractedMedicine {
   duration?: string | null;
   duration_days?: number | null;
   instructions_hi?: string | null;
+  instructions_en?: string | null;
   hindi_explanation?: string | null;
   english_explanation?: string | null;
   /** How often across days, as opposed to how many times within one. */

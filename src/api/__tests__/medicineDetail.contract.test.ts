@@ -20,6 +20,7 @@ const MEDICINE: MedicineDetail = {
   duration_days: 90,
   quantity_prescribed: 30,
   instructions_hi: "नाश्ते के बाद 1 गोली",
+  instructions_en: "1 tablet after breakfast",
   raw_text: "SARTEL H 40 TABLET 1-0-0 After Meal",
   confidence: "high",
   needs_schedule_input: false,

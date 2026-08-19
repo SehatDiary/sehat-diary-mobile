@@ -16,6 +16,7 @@ const dose = (
   medicine_name: "Amlodipine",
   dosage: "5mg",
   instructions_hi: null,
+  instructions_en: null,
   scheduled_at,
   status,
   recorded_status: status,

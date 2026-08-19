@@ -27,6 +27,7 @@ import {
 import { dayTone, isToday, sortedDoses, weekTotals } from "./adherenceWeek";
 import { TodayMedicines } from "../../api/adherence";
 import i18n from "../../i18n";
+import { doseInstruction } from "../../i18n/instruction";
 import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "MemberAdherence">;
@@ -161,8 +162,8 @@ function HistoryDoseCard({
     >
       <View style={styles.cardContent}>
         <Text style={styles.medicineName}>{dose.medicine_name}</Text>
-        {dose.instructions_hi && (
-          <Text style={styles.instructions}>{dose.instructions_hi}</Text>
+        {doseInstruction(dose) && (
+          <Text style={styles.instructions}>{doseInstruction(dose)}</Text>
         )}
         <Text style={styles.dosage}>
           {time}
@@ -229,8 +230,8 @@ function MedicineCard({
     >
       <View style={styles.cardContent}>
         <Text style={styles.medicineName}>{log.medicine_name}</Text>
-        {log.instructions_hi && (
-          <Text style={styles.instructions}>{log.instructions_hi}</Text>
+        {doseInstruction(log) && (
+          <Text style={styles.instructions}>{doseInstruction(log)}</Text>
         )}
         {log.dosage && <Text style={styles.dosage}>{log.dosage}</Text>}
         {log.taken && log.acknowledged_at && (
