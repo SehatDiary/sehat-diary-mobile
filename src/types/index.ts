@@ -30,7 +30,10 @@ export interface HealthSession {
 export interface Prescription {
   id: number;
   health_session_id: number;
-  image_url: string;
+  /** Stable R2 object key. Safe to keep. */
+  image_key: string | null;
+  /** Presigned, expires in an hour. Never persist this. */
+  image_url: string | null;
   status: "pending" | "extracted" | "confirmed" | "failed";
   raw_extraction: Record<string, unknown>;
   medicines: Medicine[];
@@ -347,6 +350,20 @@ export interface LabReport {
 }
 
 // Adapted from the flat create response ({ lab_report_id, ... })
+/** A lab report as it appears on the session response. */
+export interface SessionLabReport {
+  id: number;
+  lab_name: string | null;
+  report_date: string | null;
+  analysis_status: LabAnalysisStatus;
+  has_critical_findings: boolean;
+  image_keys: string[];
+  image_urls: string[];
+  pdf_key: string | null;
+  /** Set instead of image_urls when the report was uploaded as a PDF. */
+  pdf_url: string | null;
+}
+
 export interface LabReportUploadResult {
   id: number;
   /** The visit this went into — created by the server when none was given. */

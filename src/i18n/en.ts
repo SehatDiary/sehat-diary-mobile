@@ -147,6 +147,9 @@ export default {
     saving: "Saving...",
   },
   session: {
+    originalScan: "Original scan",
+    prescriptionScan: "Prescription",
+    couldNotOpenScan: "Could not open this file.",
     title: "Session Details",
     prescriptions: "Prescriptions",
     medicines: "Medicines",

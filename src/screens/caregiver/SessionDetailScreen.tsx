@@ -31,6 +31,7 @@ import {
   VisitInstruction,
   LabReport,
 } from "../../types";
+import OriginalScans from "./OriginalScans";
 import i18n from "../../i18n";
 import { dateLocale } from "../../i18n/locale";
 
@@ -516,6 +517,7 @@ export default function SessionDetailScreen() {
 
   const session = data?.health_session;
   const prescriptions = data?.prescriptions ?? [];
+  const labReports = data?.lab_reports ?? [];
   const doctorVisits = data?.doctor_visits ?? [];
 
   return (
@@ -578,6 +580,11 @@ export default function SessionDetailScreen() {
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Above the extracted data: everything below is a reading of these
+            images, so being able to check the source is what makes the rest
+            trustworthy. */}
+        <OriginalScans prescriptions={prescriptions} labReports={labReports} />
+
         {doctorVisits.map((visit) => (
           <React.Fragment key={visit.id}>
             <DoctorVisitCard visit={visit} />
