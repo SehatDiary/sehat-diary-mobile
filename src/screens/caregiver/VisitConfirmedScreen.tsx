@@ -18,6 +18,7 @@ import {
 import { useGetDoctorVisit } from "../../hooks/usePrescriptions";
 import i18n from "../../i18n";
 import { dateLocale } from "../../i18n/locale";
+import { groupIntoPhases, phaseParts } from "./medicinePhases";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "VisitConfirmed">;
 type Route = RouteProp<CaregiverStackParamList, "VisitConfirmed">;
@@ -124,22 +125,29 @@ export default function VisitConfirmedScreen() {
 function MedicinesSection({ medicines }: { medicines: DoctorVisit["medicines"] }) {
   if (medicines.length === 0) return null;
 
+  const groups = groupIntoPhases(medicines);
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionIcon}>{"\u{1F48A}"}</Text>
         <Text style={styles.sectionTitle}>
-          {i18n.t("visit.medicinesCount", { count: medicines.length })}
+          {i18n.t("visit.medicinesCount", { count: groups.length })}
         </Text>
       </View>
-      {medicines.map((med) => (
-        <View key={med.id} style={styles.compactItem}>
-          <Text style={styles.compactName}>{med.name}</Text>
-          <Text style={styles.compactDetail}>
-            {[med.dosage, med.frequency, med.duration_days ? `${med.duration_days} ${i18n.t("session.days")}` : null]
-              .filter(Boolean)
-              .join(" \u2022 ")}
-          </Text>
+      {groups.map((phases) => (
+        <View key={phases[0].id} style={styles.compactItem}>
+          <Text style={styles.compactName}>{phases[0].name}</Text>
+          {phases.map((med, index) => (
+            <Text key={med.id} style={styles.compactDetail}>
+              {index > 0 ? `${i18n.t("visit.thenPhase")} ` : ""}
+              {phaseParts(
+                med,
+                index > 0,
+                med.duration_days ? `${med.duration_days} ${i18n.t("session.days")}` : null
+              ).join(" \u2022 ")}
+            </Text>
+          ))}
         </View>
       ))}
     </View>

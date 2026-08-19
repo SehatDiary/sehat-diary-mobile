@@ -51,6 +51,9 @@ export interface Medicine {
   id: number;
   name: string;
   dosage: string | null;
+  // What is taken at one time — "1/2 tablet". The phases of a titration differ
+  // by this and often by nothing else.
+  dose: string | null;
   frequency: string | null;
   duration_days: number | null;
   instructions_hi: string | null;
