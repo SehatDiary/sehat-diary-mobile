@@ -25,6 +25,12 @@ export interface HealthSession {
   ended_at: string | null;
   prescriptions_count: number;
   created_at: string;
+  /** From the visit; null on sessions created before the client sent the doctor. */
+  doctor_name: string | null;
+  hospital_clinic: string | null;
+  visit_date: string | null;
+  /** Still being taken. Derived server-side, so nothing has to maintain a status. */
+  has_active_medicines: boolean;
 }
 
 export interface Prescription {
@@ -254,6 +260,8 @@ export interface MedicineDetail {
   timing: string | null;
   duration_days: number | null;
   quantity_prescribed: number | null;
+  /** Decrements on a confirmed dose. Drifts high — patients take without tapping. */
+  quantity_remaining: number | null;
   instructions_hi: string | null;
   instructions_en: string | null;
   raw_text: string | null;
@@ -523,6 +531,7 @@ export type CaregiverStackParamList = {
     doctorVisitId: number;
   };
   MedicineDetail: { medicineId: number };
+  CurrentMedicines: { memberId: number; memberName: string };
   MemberAdherence: {
     memberId: number;
     memberName: string;

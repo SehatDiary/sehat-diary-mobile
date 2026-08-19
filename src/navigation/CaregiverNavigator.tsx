@@ -10,6 +10,7 @@ import UploadLabReportScreen from "../screens/caregiver/UploadLabReportScreen";
 import LabReportResultScreen from "../screens/caregiver/LabReportResultScreen";
 import VisitConfirmedScreen from "../screens/caregiver/VisitConfirmedScreen";
 import MedicineDetailScreen from "../screens/patient/MedicineDetailScreen";
+import CurrentMedicinesScreen from "../screens/caregiver/CurrentMedicinesScreen";
 import MemberAdherenceScreen from "../screens/caregiver/MemberAdherenceScreen";
 import PendingInvitesScreen from "../screens/caregiver/PendingInvitesScreen";
 import SettingsScreen from "../screens/common/SettingsScreen";
@@ -30,6 +31,7 @@ export default function CaregiverNavigator() {
       {/* Shared with the patient stack: same screen, and both roles get the
           same actions on it. */}
       <Stack.Screen name="MedicineDetail" component={MedicineDetailScreen} />
+      <Stack.Screen name="CurrentMedicines" component={CurrentMedicinesScreen} />
       <Stack.Screen name="MemberAdherence" component={MemberAdherenceScreen} />
       <Stack.Screen name="PendingInvites" component={PendingInvitesScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -39,12 +39,23 @@ function SessionCard({
   memberId: number;
 }) {
   const navigation = useNavigation<Nav>();
-  const isActive = session.status === "active";
+
+  // The doctor titles the visit where there is one. Sessions created before the
+  // client sent the doctor on confirm have none and fall back to the date,
+  // which is all they ever had.
+  const title = String(
+    session.doctor_name ||
+      i18n.t("familyMember.visitOn", {
+        date: formatDate(session.visit_date || session.started_at),
+      })
+  );
 
   return (
     <TouchableOpacity
       style={styles.sessionCard}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={title}
       onPress={() =>
         navigation.navigate("SessionDetail", {
           memberId,
@@ -56,19 +67,25 @@ function SessionCard({
         <View
           style={[
             styles.statusDot,
-            { backgroundColor: isActive ? COLORS.success : COLORS.textSecondary },
+            {
+              backgroundColor: session.has_active_medicines
+                ? COLORS.success
+                : COLORS.textSecondary,
+            },
           ]}
         />
-        <Text style={styles.sessionStatus}>
-          {isActive
-            ? i18n.t("familyMember.active")
-            : i18n.t("familyMember.completed")}
-        </Text>
-        <Text style={styles.sessionDate}>
-          {i18n.t("familyMember.startedOn")} {formatDate(session.started_at)}
+        <Text style={styles.sessionStatus} numberOfLines={1}>
+          {title}
         </Text>
       </View>
+
+      {session.hospital_clinic && (
+        <Text style={styles.sessionDate}>{session.hospital_clinic}</Text>
+      )}
+
       <Text style={styles.prescriptionCount}>
+        {formatDate(session.visit_date || session.started_at)}
+        {"  \u2022  "}
         {session.prescriptions_count} {i18n.t("familyMember.prescriptions")}
       </Text>
     </TouchableOpacity>
@@ -84,6 +101,13 @@ export default function FamilyMemberScreen() {
   const { data: sessions, isLoading: sessionsLoading } =
     useGetHealthSessions(memberId);
   const member = data?.family_member;
+
+  // A visit is current while something on it is still being taken. Finished
+  // ones stay reachable but out of the way — the list is otherwise every visit
+  // ever, ordered by date, with the useful one somewhere in the middle.
+  const [showAllSessions, setShowAllSessions] = useState(false);
+  const current = (sessions ?? []).filter((s) => s.has_active_medicines);
+  const finished = (sessions ?? []).filter((s) => !s.has_active_medicines);
   const isLoading = memberLoading || sessionsLoading;
 
   if (isLoading) {
@@ -202,10 +226,8 @@ export default function FamilyMemberScreen() {
             key: "current",
             icon: "\u{1F48A}",
             label: i18n.t("familyMember.currentMedicines"),
-            // Waiting on the consolidated view; shown so the shape of the page
-            // is settled rather than shifting when it arrives.
-            disabled: true,
-            onPress: () => {},
+            onPress: () =>
+              navigation.navigate("CurrentMedicines", { memberId, memberName: member.name }),
           },
           {
             key: "adherence",
@@ -235,12 +257,32 @@ export default function FamilyMemberScreen() {
         </View>
       ) : (
         <FlatList
-          data={sessions}
+          data={showAllSessions ? sessions : current}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <SessionCard session={item} memberId={memberId} />
           )}
           contentContainerStyle={styles.sessionsList}
+          ListEmptyComponent={
+            <Text style={styles.emptyHint}>
+              {i18n.t("familyMember.noCurrentVisits")}
+            </Text>
+          }
+          ListFooterComponent={
+            finished.length > 0 ? (
+              <TouchableOpacity
+                style={styles.seeAllButton}
+                onPress={() => setShowAllSessions((shown) => !shown)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.seeAllText}>
+                  {showAllSessions
+                    ? i18n.t("familyMember.showCurrentOnly")
+                    : i18n.t("familyMember.seeAllVisits", { count: finished.length })}
+                </Text>
+              </TouchableOpacity>
+            ) : null
+          }
         />
       )}
     </View>
@@ -248,6 +290,15 @@ export default function FamilyMemberScreen() {
 }
 
 const styles = StyleSheet.create({
+  seeAllButton: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  seeAllText: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
