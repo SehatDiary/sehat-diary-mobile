@@ -17,7 +17,8 @@ export const useUploadLabReport = () => {
       prescribedTestId,
     }: {
       familyMemberId: number;
-      healthSessionId: number;
+      /** null when uploading from the family member page. */
+      healthSessionId: number | null;
       images: string[];
       pdfFile?: string;
       prescribedTestId?: number;

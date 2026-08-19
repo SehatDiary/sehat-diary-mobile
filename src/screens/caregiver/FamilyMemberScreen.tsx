@@ -14,8 +14,8 @@ import { COLORS, FONT_SIZES } from "../../constants";
 import {
   useGetFamilyMember,
   useGetHealthSessions,
-  useCreateHealthSession,
 } from "../../hooks/useFamilyMembers";
+import ActionTiles from "../../components/ActionTiles";
 import { CaregiverStackParamList, HealthSession } from "../../types";
 import i18n from "../../i18n";
 import { dateLocale } from "../../i18n/locale";
@@ -83,27 +83,8 @@ export default function FamilyMemberScreen() {
   const { data, isLoading: memberLoading } = useGetFamilyMember(memberId);
   const { data: sessions, isLoading: sessionsLoading } =
     useGetHealthSessions(memberId);
-  const createSession = useCreateHealthSession();
-
   const member = data?.family_member;
   const isLoading = memberLoading || sessionsLoading;
-
-  const handleNewVisit = () => {
-    createSession.mutate(
-      { memberId, startedAt: new Date().toISOString() },
-      {
-        onSuccess: (session) => {
-          navigation.navigate("SessionDetail", {
-            memberId,
-            sessionId: session.id,
-          });
-        },
-        onError: () => {
-          Alert.alert(i18n.t("common.error"));
-        },
-      }
-    );
-  };
 
   if (isLoading) {
     return (
@@ -191,35 +172,56 @@ export default function FamilyMemberScreen() {
         </View>
       )}
 
-      <TouchableOpacity
-        style={styles.adherenceButton}
-        activeOpacity={0.7}
-        onPress={() =>
-          navigation.navigate("MemberAdherence", {
-            memberId,
-            memberName: member.name,
-          })
-        }
-      >
-        <Text style={styles.adherenceButtonText}>
-          {i18n.t("familyMember.viewAdherence")}
-        </Text>
-      </TouchableOpacity>
+      {/* Upload starts here rather than from a "New visit" button. Nothing is
+          created until the upload succeeds, so abandoning it leaves nothing
+          behind — which is what the old flow did every time. */}
+      <ActionTiles
+        title={i18n.t("familyMember.addSection")}
+        actions={[
+          {
+            key: "prescription",
+            icon: "\u{1F4CB}",
+            label: i18n.t("familyMember.uploadPrescription"),
+            onPress: () =>
+              navigation.navigate("UploadPrescription", { memberId, sessionId: null }),
+          },
+          {
+            key: "labReport",
+            icon: "\u{1F52C}",
+            label: i18n.t("familyMember.addLabReport"),
+            onPress: () =>
+              navigation.navigate("UploadLabReport", { memberId, sessionId: null }),
+          },
+        ]}
+      />
+
+      <ActionTiles
+        title={i18n.t("familyMember.medicinesSection")}
+        actions={[
+          {
+            key: "current",
+            icon: "\u{1F48A}",
+            label: i18n.t("familyMember.currentMedicines"),
+            // Waiting on the consolidated view; shown so the shape of the page
+            // is settled rather than shifting when it arrives.
+            disabled: true,
+            onPress: () => {},
+          },
+          {
+            key: "adherence",
+            icon: "\u{1F4C5}",
+            label: i18n.t("familyMember.viewAdherence"),
+            onPress: () =>
+              navigation.navigate("MemberAdherence", { memberId, memberName: member.name }),
+          },
+        ]}
+      />
 
       {/* Sessions Section */}
       <View style={styles.sessionsHeader}>
         <Text style={styles.sectionTitle}>
           {i18n.t("familyMember.healthSessions")}
         </Text>
-        <TouchableOpacity
-          style={styles.newVisitButton}
-          onPress={handleNewVisit}
-          disabled={createSession.isPending}
-        >
-          <Text style={styles.newVisitText}>
-            + {i18n.t("familyMember.newVisit")}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {!sessions || sessions.length === 0 ? (

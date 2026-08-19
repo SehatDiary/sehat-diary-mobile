@@ -103,6 +103,11 @@ export default {
     allClearHi: "\u0938\u092C \u0920\u0940\u0915 \u0939\u0948!",
   },
   familyMember: {
+    addSection: "Add",
+    medicinesSection: "Medicines",
+    uploadPrescription: "Prescription",
+    addLabReport: "Lab report",
+    currentMedicines: "Current medicines",
     edit: "Edit",
     profile: "Profile",
     age: "Age",
