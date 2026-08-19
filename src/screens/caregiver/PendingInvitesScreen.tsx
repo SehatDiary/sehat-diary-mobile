@@ -127,7 +127,9 @@ export default function PendingInvitesScreen() {
     acceptMutation.mutate(id, {
       onSuccess: () => {
         setAcceptingId(null);
-        navigation.navigate("Dashboard");
+        // Back to the dashboard beneath us — navigate() would push a second
+        // Dashboard under React Navigation 7 (see VisitConfirmedScreen).
+        navigation.popTo("Dashboard");
       },
       onError: (err: unknown) => {
         setAcceptingId(null);

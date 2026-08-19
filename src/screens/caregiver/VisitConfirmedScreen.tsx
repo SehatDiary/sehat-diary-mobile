@@ -51,7 +51,12 @@ export default function VisitConfirmedScreen() {
   );
 
   const handleDone = () => {
-    navigation.navigate("SessionDetail", { memberId, sessionId });
+    // popTo, not navigate: this goes BACK to the session already beneath us.
+    // React Navigation 7 changed navigate() to push a fresh copy of a screen
+    // even when one is already in the stack, so navigate here stacked a new
+    // SessionDetail on top of this screen — and back walked the user into
+    // "Visit Saved!" forever, with home unreachable.
+    navigation.popTo("SessionDetail", { memberId, sessionId });
   };
 
   if (isLoading || !doctorVisit) {
