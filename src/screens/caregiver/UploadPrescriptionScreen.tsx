@@ -34,6 +34,13 @@ import {
   needsFrequency,
 } from "./reviewGate";
 import {
+  buildConfirmedData,
+  emptyVisitEdits,
+  isValidVisitDate,
+  visitEditsFrom,
+  VisitEdits,
+} from "./confirmPayload";
+import {
   blankMedicine,
   FREQUENCY_OPTIONS,
   INTERVAL_OPTIONS,
@@ -61,6 +68,10 @@ export default function UploadPrescriptionScreen() {
   const [medicines, setMedicines] = useState<ExtractedMedicine[]>([]);
   const [reviewedIndexes, setReviewedIndexes] = useState<number[]>([]);
   const [extractedNames, setExtractedNames] = useState<string[]>([]);
+  // The whole extraction, kept so it can be sent back. Only `medicines` used to
+  // survive confirmation; everything else was discarded.
+  const [extractedData, setExtractedData] = useState<Record<string, unknown> | null>(null);
+  const [visitEdits, setVisitEdits] = useState<VisitEdits>(emptyVisitEdits());
   const [errorMessage, setErrorMessage] = useState("");
 
   const pickImage = async (useCamera: boolean) => {
@@ -100,6 +111,8 @@ export default function UploadPrescriptionScreen() {
           setPrescriptionId(data.prescription_id);
           const extracted = (data.extracted_data as { medicines?: ExtractedMedicine[] })
             ?.medicines ?? [];
+          setExtractedData(data.extracted_data as Record<string, unknown>);
+          setVisitEdits(visitEditsFrom(data.extracted_data as Record<string, unknown>));
           setMedicines(extracted);
           setExtractedNames(extracted.map((m) => m.name));
           setReviewedIndexes([]);
@@ -192,34 +205,42 @@ export default function UploadPrescriptionScreen() {
         familyMemberId: memberId,
         healthSessionId: sessionId,
         prescriptionId,
-        confirmedData: { medicines: medicines as unknown as Record<string, unknown>[] },
+        confirmedData: buildConfirmedData(extractedData, medicines, visitEdits) as {
+          medicines: Record<string, unknown>[];
+        },
       },
       {
         onSuccess: (result) => {
-          if (result.doctor_visit) {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 2,
-                routes: [
-                  { name: "Dashboard" },
-                  { name: "SessionDetail", params: { memberId, sessionId } },
-                  {
-                    name: "VisitConfirmed",
-                    params: {
-                      memberId,
-                      sessionId,
-                      doctorVisit: result.doctor_visit,
-                    },
-                  },
-                ],
-              })
+          // The name printed on the prescription did not match the family member
+          // this is being filed against. Everything here — the medicines, the
+          // reminders — belongs to whoever's session you are in, so a mismatch
+          // is worth a look before it becomes someone's schedule.
+          if (result.unmatched_warning) {
+            Alert.alert(
+              i18n.t("prescription.patientMismatchTitle"),
+              i18n.t("prescription.patientMismatchMessage"),
+              [ { text: i18n.t("common.close"), onPress: () => goToConfirmation(result.doctor_visit_id) } ]
             );
-          } else {
-            navigation.goBack();
+            return;
           }
+
+          goToConfirmation(result.doctor_visit_id);
         },
         onError: () => Alert.alert(i18n.t("common.error")),
       }
+    );
+  };
+
+  const goToConfirmation = (doctorVisitId: number) => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 2,
+        routes: [
+          { name: "Dashboard" },
+          { name: "SessionDetail", params: { memberId, sessionId } },
+          { name: "VisitConfirmed", params: { memberId, sessionId, doctorVisitId } },
+        ],
+      })
     );
   };
 
@@ -229,6 +250,8 @@ export default function UploadPrescriptionScreen() {
     setPrescriptionId(null);
     setMedicines([]);
     setExtractedNames([]);
+    setExtractedData(null);
+    setVisitEdits(emptyVisitEdits());
     setReviewedIndexes([]);
     setErrorMessage("");
   };
@@ -249,6 +272,8 @@ export default function UploadPrescriptionScreen() {
           medicines={medicines}
           reviewedIndexes={reviewedIndexes}
           unreviewedLowCount={unreviewedLowCount}
+          visitEdits={visitEdits}
+          onUpdateVisit={(patch) => setVisitEdits((prev) => ({ ...prev, ...patch }))}
           onUpdateField={updateMedicineField}
           onAdd={addMedicine}
           onRemove={removeMedicine}
@@ -367,6 +392,8 @@ function ReviewState({
   medicines,
   reviewedIndexes,
   unreviewedLowCount,
+  visitEdits,
+  onUpdateVisit,
   onUpdateField,
   onMarkReviewed,
   onAdd,
@@ -377,6 +404,8 @@ function ReviewState({
   medicines: ExtractedMedicine[];
   reviewedIndexes: number[];
   unreviewedLowCount: number;
+  visitEdits: VisitEdits;
+  onUpdateVisit: (patch: Partial<VisitEdits>) => void;
   onUpdateField: (index: number, patch: Partial<ExtractedMedicine>) => void;
   onMarkReviewed: (index: number) => void;
   onAdd: () => void;
@@ -389,7 +418,10 @@ function ReviewState({
   // confirmed blank would sit in the medicine list reminding nobody.
   const incompleteCount =
     countMissingFrequency(medicines) + countMissingName(medicines);
-  const confirmable = canConfirm(medicines, reviewedIndexes);
+  // A date the server cannot parse falls back to today without saying so, which
+  // is the failure this screen now exists to prevent.
+  const dateIsValid = isValidVisitDate(visitEdits.visit_date);
+  const confirmable = canConfirm(medicines, reviewedIndexes) && dateIsValid;
 
   return (
     <View style={styles.reviewContainer}>
@@ -399,6 +431,37 @@ function ReviewState({
       <Text style={styles.reviewHint}>
         {i18n.t("prescription.reviewHint")}
       </Text>
+
+      {/* The visit itself. These were extracted and then thrown away at confirm,
+          so the doctor was never recorded and every visit date became today. */}
+      <View style={styles.visitCard}>
+        <Text style={styles.fieldLabel}>{i18n.t("prescription.doctorName")}</Text>
+        <TextInput
+          style={styles.nameInput}
+          value={visitEdits.doctor_name}
+          onChangeText={(doctor_name) => onUpdateVisit({ doctor_name })}
+          placeholder={i18n.t("prescription.notOnPrescription")}
+        />
+
+        <Text style={styles.fieldLabel}>{i18n.t("prescription.hospitalClinic")}</Text>
+        <TextInput
+          style={styles.nameInput}
+          value={visitEdits.hospital_clinic}
+          onChangeText={(hospital_clinic) => onUpdateVisit({ hospital_clinic })}
+          placeholder={i18n.t("prescription.notOnPrescription")}
+        />
+
+        <Text style={styles.fieldLabel}>{i18n.t("prescription.visitDate")}</Text>
+        <TextInput
+          style={[styles.nameInput, !dateIsValid && styles.nameInputLow]}
+          value={visitEdits.visit_date}
+          onChangeText={(visit_date) => onUpdateVisit({ visit_date })}
+          placeholder="DD/MM/YYYY"
+        />
+        {!dateIsValid && (
+          <Text style={styles.dateError}>{i18n.t("prescription.visitDateInvalid")}</Text>
+        )}
+      </View>
 
       <ScrollView
         style={styles.medicinesList}
@@ -645,6 +708,20 @@ function ErrorState({
 }
 
 const styles = StyleSheet.create({
+  visitCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  dateError: {
+    color: COLORS.error,
+    fontSize: FONT_SIZES.small,
+    marginTop: 6,
+  },
   optionBlock: {
     marginTop: 12,
   },

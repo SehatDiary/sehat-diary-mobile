@@ -191,6 +191,13 @@ export default {
     pendingStatus: "Pending",
   },
   prescription: {
+    doctorName: "Doctor",
+    hospitalClinic: "Hospital or clinic",
+    visitDate: "Visit date",
+    visitDateInvalid: "Use DD/MM/YYYY, e.g. 13/12/2025",
+    notOnPrescription: "Not on the prescription",
+    patientMismatchTitle: "Different patient name",
+    patientMismatchMessage: "The name on this prescription does not match this family member. It has been saved — check that it belongs to the right person.",
     freqOnce: "Once a day",
     freqTwice: "Twice a day",
     freqThrice: "Three times a day",
