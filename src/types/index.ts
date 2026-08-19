@@ -349,6 +349,8 @@ export interface LabReport {
 // Adapted from the flat create response ({ lab_report_id, ... })
 export interface LabReportUploadResult {
   id: number;
+  /** The visit this went into — created by the server when none was given. */
+  health_session_id: number;
   images_uploaded: number;
   status: LabAnalysisStatus;
   message: string;
@@ -479,10 +481,11 @@ export type CaregiverStackParamList = {
   AddFamilyMember: { memberId?: number } | undefined;
   FamilyMember: { memberId: number };
   SessionDetail: { memberId: number; sessionId: number };
-  UploadPrescription: { memberId: number; sessionId: number };
+  // sessionId null = start a new visit; the server creates it on upload.
+  UploadPrescription: { memberId: number; sessionId: number | null };
   UploadLabReport: {
     memberId: number;
-    sessionId: number;
+    sessionId: number | null;
     prescribedTestId?: number;
   };
   LabReportResult: {
@@ -537,6 +540,8 @@ export interface ExtractedMedicine {
 
 export interface ExtractionResult {
   prescription_id: number;
+  /** The visit this went into — created by the server when none was given. */
+  health_session_id: number;
   extracted_data: { medicines?: ExtractedMedicine[] } & Record<string, unknown>;
   confidence_counts: Record<MedicineConfidence, number>;
   /** @deprecated lossy — read extracted_data.medicines[].confidence instead */

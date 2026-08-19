@@ -31,15 +31,25 @@ export const uploadImage = async (
   return data;
 };
 
+/**
+ * Two entry points, deliberately.
+ *
+ * With a session id, the prescription is added to that visit. Without one, the
+ * server creates the visit and the prescription together in a transaction — so
+ * abandoning an upload leaves nothing behind, which is what "New visit"
+ * creating an empty session used to do.
+ */
 export const createPrescription = async (
   familyMemberId: number,
-  healthSessionId: number,
+  healthSessionId: number | null,
   imageKey: string
 ): Promise<ExtractionResult> => {
-  const { data } = await client.post(
-    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescriptions`,
-    { image_key: imageKey }
-  );
+  const path =
+    healthSessionId == null
+      ? `/family_members/${familyMemberId}/prescriptions`
+      : `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/prescriptions`;
+
+  const { data } = await client.post(path, { image_key: imageKey });
   return data;
 };
 

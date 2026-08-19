@@ -53,7 +53,8 @@ export const useUploadPrescription = () => {
     }: {
       uri: string;
       familyMemberId: number;
-      healthSessionId: number;
+      /** null when uploading from the family member page — the server creates the visit. */
+      healthSessionId: number | null;
     }) => {
       const { key } = await uploadImage(uri);
       const result = await createPrescription(

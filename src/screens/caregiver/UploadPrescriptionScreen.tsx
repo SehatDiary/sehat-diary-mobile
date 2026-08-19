@@ -65,6 +65,10 @@ export default function UploadPrescriptionScreen() {
   const [screenState, setScreenState] = useState<ScreenState>("idle");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [prescriptionId, setPrescriptionId] = useState<number | null>(null);
+  // The visit this ended up in. When the upload starts from the family member
+  // page there is no session yet, and the server creates one — everything after
+  // the upload has to use the id it returns rather than the route param.
+  const [resolvedSessionId, setResolvedSessionId] = useState<number | null>(sessionId);
   const [medicines, setMedicines] = useState<ExtractedMedicine[]>([]);
   const [reviewedIndexes, setReviewedIndexes] = useState<number[]>([]);
   const [extractedNames, setExtractedNames] = useState<string[]>([]);
@@ -109,6 +113,7 @@ export default function UploadPrescriptionScreen() {
       {
         onSuccess: (data) => {
           setPrescriptionId(data.prescription_id);
+          setResolvedSessionId(data.health_session_id ?? sessionId);
           const extracted = (data.extracted_data as { medicines?: ExtractedMedicine[] })
             ?.medicines ?? [];
           setExtractedData(data.extracted_data as Record<string, unknown>);
@@ -198,12 +203,12 @@ export default function UploadPrescriptionScreen() {
   );
 
   const handleConfirm = () => {
-    if (!prescriptionId) return;
+    if (!prescriptionId || resolvedSessionId == null) return;
 
     confirmPrescription.mutate(
       {
         familyMemberId: memberId,
-        healthSessionId: sessionId,
+        healthSessionId: resolvedSessionId,
         prescriptionId,
         confirmedData: buildConfirmedData(extractedData, medicines, visitEdits) as {
           medicines: Record<string, unknown>[];
@@ -232,13 +237,17 @@ export default function UploadPrescriptionScreen() {
   };
 
   const goToConfirmation = (doctorVisitId: number) => {
+    // resolvedSessionId, not the route param: an upload started from the family
+    // member page had no session until the server made one.
+    const visitSessionId = resolvedSessionId as number;
+
     navigation.dispatch(
       CommonActions.reset({
         index: 2,
         routes: [
           { name: "Dashboard" },
-          { name: "SessionDetail", params: { memberId, sessionId } },
-          { name: "VisitConfirmed", params: { memberId, sessionId, doctorVisitId } },
+          { name: "SessionDetail", params: { memberId, sessionId: visitSessionId } },
+          { name: "VisitConfirmed", params: { memberId, sessionId: visitSessionId, doctorVisitId } },
         ],
       })
     );

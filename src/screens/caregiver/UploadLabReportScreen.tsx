@@ -39,6 +39,9 @@ export default function UploadLabReportScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [pdfFile, setPdfFile] = useState<string | null>(null);
   const [reportId, setReportId] = useState<number | null>(null);
+  // The visit the report went into. Uploading from the family member page has no
+  // session until the server creates one alongside the report.
+  const [resolvedSessionId, setResolvedSessionId] = useState<number | null>(sessionId);
   const [uploadCount, setUploadCount] = useState(0);
 
   const { data: statusData } = useGetAnalysisStatus(
@@ -52,7 +55,7 @@ export default function UploadLabReportScreen() {
     if (statusData.status === "completed") {
       navigation.replace("LabReportResult", {
         memberId,
-        sessionId,
+        sessionId: resolvedSessionId as number,
         reportId: reportId!,
       });
     } else if (statusData.status === "failed") {
@@ -128,6 +131,7 @@ export default function UploadLabReportScreen() {
       {
         onSuccess: (result) => {
           setReportId(result.id);
+          setResolvedSessionId(result.health_session_id ?? sessionId);
           setScreenState("analyzing");
         },
         onError: () => {

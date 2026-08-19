@@ -6,9 +6,10 @@ import {
   LabReportUploadResult,
 } from "../types";
 
+/** healthSessionId null starts a new visit; the server creates it with the report. */
 export const uploadLabReport = async (
   familyMemberId: number,
-  healthSessionId: number,
+  healthSessionId: number | null,
   images: string[],
   pdfFile?: string,
   prescribedTestId?: number
@@ -40,14 +41,18 @@ export const uploadLabReport = async (
     formData.append("prescribed_test_id", String(prescribedTestId));
   }
 
-  const { data } = await client.post(
-    `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/lab_reports`,
-    formData,
-    { headers: { "Content-Type": "multipart/form-data" } }
-  );
+  const path =
+    healthSessionId == null
+      ? `/family_members/${familyMemberId}/lab_reports`
+      : `/family_members/${familyMemberId}/health_sessions/${healthSessionId}/lab_reports`;
+
+  const { data } = await client.post(path, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   // Contract: create returns a FLAT payload — { lab_report_id, images_uploaded, status, ... }
   return {
     id: data.lab_report_id,
+    health_session_id: data.health_session_id,
     images_uploaded: data.images_uploaded,
     status: data.status,
     message: data.message,
