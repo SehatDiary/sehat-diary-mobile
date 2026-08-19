@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -14,6 +15,7 @@ import {
   DoctorVisit,
   VisitInstruction,
 } from "../../types";
+import { useGetDoctorVisit } from "../../hooks/usePrescriptions";
 import i18n from "../../i18n";
 import { dateLocale } from "../../i18n/locale";
 
@@ -40,11 +42,25 @@ function formatDate(dateStr: string) {
 export default function VisitConfirmedScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { memberId, sessionId, doctorVisit } = route.params;
+  const { memberId, sessionId, doctorVisitId } = route.params;
+
+  const { data: doctorVisit, isLoading } = useGetDoctorVisit(
+    memberId,
+    sessionId,
+    doctorVisitId
+  );
 
   const handleDone = () => {
     navigation.navigate("SessionDetail", { memberId, sessionId });
   };
+
+  if (isLoading || !doctorVisit) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -208,6 +224,12 @@ function InstructionsSection({
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.background,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

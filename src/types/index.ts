@@ -191,10 +191,19 @@ export interface PatientCriticalLabReport {
   created_at: string;
 }
 
+// Mirrors what the server actually returns. This previously declared a
+// `doctor_visit` object the API has never sent, so `if (result.doctor_visit)`
+// was permanently false and the confirmation screen was unreachable.
 export interface ConfirmPrescriptionResult {
   success: boolean;
+  doctor_visit_id: number;
   medicines_count: number;
-  doctor_visit: DoctorVisit;
+  tests_count: number;
+  referrals_count: number;
+  instructions_count: number;
+  patient_matched: boolean;
+  /** Set when the name on the prescription does not match the family member. */
+  unmatched_warning: string | null;
 }
 
 export interface AdherenceLog {
@@ -481,10 +490,13 @@ export type CaregiverStackParamList = {
     sessionId: number;
     reportId: number;
   };
+  // Addressed by id and fetched. It used to expect a whole DoctorVisit object
+  // that the confirm response has never contained, so this screen was
+  // unreachable and every confirmation fell through to goBack().
   VisitConfirmed: {
     memberId: number;
     sessionId: number;
-    doctorVisit: DoctorVisit;
+    doctorVisitId: number;
   };
   MedicineDetail: { medicineId: number };
   MemberAdherence: {
