@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  todaysMedicinesKey,
+  memberAdherenceKey,
+  memberAdherenceHistoryKey,
+} from "./useAdherence";
+import {
   getFamilyMembers,
   getFamilyMember,
   createFamilyMember,
@@ -8,6 +13,8 @@ import {
   getHealthSession,
   createHealthSession,
   getPendingActions,
+  getCurrentMedicines,
+  deleteHealthSession,
 } from "../api/familyMembers";
 
 // One factory per query key, used by both the query that reads it and every
@@ -26,6 +33,10 @@ export const healthSessionKey = (memberId: number, sessionId: number) => [
   sessionId,
 ];
 export const pendingActionsKey = () => ["pendingActions"];
+export const currentMedicinesKey = (memberId: number) => [
+  "currentMedicines",
+  memberId,
+];
 
 export const useGetFamilyMembers = () => {
   return useQuery({
@@ -102,5 +113,35 @@ export const useGetPendingActions = () => {
   return useQuery({
     queryKey: pendingActionsKey(),
     queryFn: getPendingActions,
+  });
+};
+
+export const useGetCurrentMedicines = (memberId: number) => {
+  return useQuery({
+    queryKey: currentMedicinesKey(memberId),
+    queryFn: () => getCurrentMedicines(memberId),
+  });
+};
+
+// Deleting a visit stops its medicines, so every list that shows a medicine or a
+// dose is now wrong until it refetches — not just the session list.
+export const useDeleteHealthSession = (memberId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: number) => deleteHealthSession(memberId, sessionId),
+    onSuccess: () => {
+      for (const queryKey of [
+        healthSessionsKey(memberId),
+        familyMemberKey(memberId),
+        currentMedicinesKey(memberId),
+        memberAdherenceKey(memberId),
+        memberAdherenceHistoryKey(memberId),
+        todaysMedicinesKey(),
+        pendingActionsKey(),
+      ]) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    },
   });
 };

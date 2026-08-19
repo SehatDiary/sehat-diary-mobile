@@ -12,7 +12,10 @@ import {
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES } from "../../constants";
-import { useGetHealthSession } from "../../hooks/useFamilyMembers";
+import {
+  useGetHealthSession,
+  useDeleteHealthSession,
+} from "../../hooks/useFamilyMembers";
 import {
   useGetLabReports,
   useAutoRefreshLabReports,
@@ -507,6 +510,34 @@ export default function SessionDetailScreen() {
   const { memberId, sessionId } = route.params;
 
   const { data, isLoading } = useGetHealthSession(memberId, sessionId);
+  const deleteSession = useDeleteHealthSession(memberId);
+
+  // Names what stops, rather than asking a bare "are you sure". Deleting hides
+  // the visit and stops its medicines; nothing is destroyed and it can be
+  // restored, but the reminders ending is the part worth being sure about.
+  const confirmDelete = () => {
+    const medicines = (data?.doctor_visits ?? []).reduce(
+      (count, visit) => count + (visit.medicines?.length ?? 0),
+      0
+    );
+
+    Alert.alert(
+      i18n.t("session.deleteTitle"),
+      i18n.t("session.deleteMessage", { count: medicines }),
+      [
+        { text: i18n.t("common.cancel"), style: "cancel" },
+        {
+          text: i18n.t("session.deleteAction"),
+          style: "destructive",
+          onPress: () =>
+            deleteSession.mutate(sessionId, {
+              onSuccess: () => navigation.goBack(),
+              onError: () => Alert.alert(i18n.t("session.deleteFailed")),
+            }),
+        },
+      ]
+    );
+  };
 
   if (isLoading) {
     return (
@@ -528,6 +559,15 @@ export default function SessionDetailScreen() {
           <Text style={styles.backText}>{"←"}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{i18n.t("session.title")}</Text>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={confirmDelete}
+          disabled={deleteSession.isPending}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t("session.deleteAction")}
+        >
+          <Text style={styles.deleteButtonText}>{i18n.t("session.deleteAction")}</Text>
+        </TouchableOpacity>
       </View>
 
       {session && (
@@ -618,6 +658,19 @@ export default function SessionDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  deleteButton: {
+    marginLeft: "auto",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.white,
+  },
+  deleteButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.small,
+    fontWeight: "600",
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

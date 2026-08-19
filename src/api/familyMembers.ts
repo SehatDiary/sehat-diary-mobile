@@ -6,6 +6,7 @@ import {
   DoctorVisit,
   PendingActionsResponse,
   SessionLabReport,
+  MedicineDetail,
 } from "../types";
 
 export const getFamilyMembers = async (): Promise<FamilyMember[]> => {
@@ -37,6 +38,21 @@ export const updateFamilyMember = async (
 ): Promise<FamilyMember> => {
   const { data } = await client.patch(`/family_members/${id}`, params);
   return data.family_member;
+};
+
+/** Everything this member is taking now, across every visit. */
+export const getCurrentMedicines = async (
+  familyMemberId: number
+): Promise<MedicineDetail[]> => {
+  const { data } = await client.get(`/family_members/${familyMemberId}/medicines`);
+  return data.prescribed_medicines;
+};
+
+export const deleteHealthSession = async (
+  familyMemberId: number,
+  sessionId: number
+): Promise<void> => {
+  await client.delete(`/family_members/${familyMemberId}/health_sessions/${sessionId}`);
 };
 
 export const getHealthSessions = async (

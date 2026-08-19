@@ -53,6 +53,9 @@ export default {
     checkHint: "If this does not match your medicine, show it to your caregiver or doctor.",
   },
   medicines: {
+    noneRunning: "No medicines running right now",
+    noReminderSet: "No reminder set",
+    leftCount: "%{count} left",
     title: "Today's Medicines",
     taken: "Taken \u2713",
     whatIsThis: "What is this medicine?",
@@ -103,6 +106,10 @@ export default {
     allClearHi: "\u0938\u092C \u0920\u0940\u0915 \u0939\u0948!",
   },
   familyMember: {
+    visitOn: "Visit on %{date}",
+    noCurrentVisits: "No visits with medicines running",
+    seeAllVisits: "See all visits (%{count} finished)",
+    showCurrentOnly: "Show current only",
     addSection: "Add",
     medicinesSection: "Medicines",
     uploadPrescription: "Prescription",
@@ -147,6 +154,10 @@ export default {
     saving: "Saving...",
   },
   session: {
+    deleteTitle: "Delete this visit?",
+    deleteMessage: "%{count} medicine(s) will stop reminding. Nothing is lost — you can restore it.",
+    deleteAction: "Delete",
+    deleteFailed: "Could not delete this visit. Please try again.",
     originalScan: "Original scan",
     prescriptionScan: "Prescription",
     couldNotOpenScan: "Could not open this file.",
