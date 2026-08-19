@@ -18,6 +18,7 @@ import {
   useRestartMedicine,
 } from "../../hooks/usePrescriptions";
 import i18n from "../../i18n";
+import { doseInstruction } from "../../i18n/instruction";
 
 type Nav = StackNavigationProp<PatientStackParamList, "MedicineDetail">;
 type Route = RouteProp<PatientStackParamList, "MedicineDetail">;
@@ -209,9 +210,9 @@ export default function MedicineDetailScreen() {
           </View>
         )}
 
-        {medicine.instructions_hi && (
+        {doseInstruction(medicine) && (
           <View style={styles.explanationCard}>
-            <Text style={styles.explanationText}>{medicine.instructions_hi}</Text>
+            <Text style={styles.explanationText}>{doseInstruction(medicine)}</Text>
           </View>
         )}
 

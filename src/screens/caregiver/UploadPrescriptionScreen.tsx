@@ -25,6 +25,7 @@ import {
   ExtractedMedicine,
 } from "../../types";
 import i18n from "../../i18n";
+import { doseInstruction } from "../../i18n/instruction";
 import {
   canConfirm,
   countMissingFrequency,
@@ -612,13 +613,13 @@ function ReviewState({
                 />
               )}
 
-              {med.instructions_hi && (
+              {doseInstruction(med) && (
                 <View style={styles.instructionsBox}>
                   <Text style={styles.instructionsLabel}>
                     {i18n.t("session.instructions")}
                   </Text>
                   <Text style={styles.instructionsText}>
-                    {med.instructions_hi}
+                    {doseInstruction(med)}
                   </Text>
                 </View>
               )}

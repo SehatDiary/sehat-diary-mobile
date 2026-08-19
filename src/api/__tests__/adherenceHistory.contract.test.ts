@@ -29,6 +29,7 @@ const RESPONSE: AdherenceHistory = {
           medicine_name: "Amlodipine",
           dosage: "5mg",
           instructions_hi: "खाने के बाद लें",
+          instructions_en: "Take after food",
           scheduled_at: "2026-08-18T08:00:00+05:30",
           status: "missed",
           recorded_status: "pending",

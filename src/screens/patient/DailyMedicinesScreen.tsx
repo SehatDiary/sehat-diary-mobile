@@ -20,6 +20,7 @@ import {
 import { AdherenceLog, PatientCriticalLabReport, PatientStackParamList } from "../../types";
 import { TodayMedicines } from "../../api/adherence";
 import i18n from "../../i18n";
+import { doseInstruction } from "../../i18n/instruction";
 import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<PatientStackParamList, "DailyMedicines">;
@@ -124,8 +125,8 @@ function MedicineCard({
         onPress={() => onOpen(log)}
       >
         <Text style={styles.medicineName}>{log.medicine_name}</Text>
-        {log.instructions_hi && (
-          <Text style={styles.instructions}>{log.instructions_hi}</Text>
+        {doseInstruction(log) && (
+          <Text style={styles.instructions}>{doseInstruction(log)}</Text>
         )}
         {log.dosage && (
           <Text style={styles.dosage}>{log.dosage}</Text>

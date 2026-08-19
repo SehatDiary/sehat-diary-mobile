@@ -15,6 +15,7 @@ import { PatientStackParamList } from "../../types";
 import { getHealthSession } from "../../api/familyMembers";
 import { hindiFirst } from "./patientText";
 import i18n from "../../i18n";
+import { doseInstruction } from "../../i18n/instruction";
 import { dateLocale } from "../../i18n/locale";
 
 type Nav = StackNavigationProp<PatientStackParamList, "VisitDetail">;
@@ -121,9 +122,9 @@ export default function VisitDetailScreen() {
                 }
               >
                 <Text style={styles.medicineName}>{medicine.name}</Text>
-                {medicine.instructions_hi && (
+                {doseInstruction(medicine) && (
                   <Text style={styles.medicineHint}>
-                    {medicine.instructions_hi}
+                    {doseInstruction(medicine)}
                   </Text>
                 )}
               </TouchableOpacity>
