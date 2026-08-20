@@ -32,6 +32,7 @@ import {
   countMissingName,
   countUnreviewedLowConfidence,
   isMeaningfulEdit,
+  medicineStepComplete,
   needsFrequency,
 } from "./reviewGate";
 import {
@@ -43,12 +44,14 @@ import {
 } from "./confirmPayload";
 import {
   blankMedicine,
+  FOOD_OPTIONS,
   FREQUENCY_OPTIONS,
   INTERVAL_OPTIONS,
   Option,
-  TIMING_OPTIONS,
+  TIME_OF_DAY_OPTIONS,
   WEEKDAY_OPTIONS,
 } from "./medicineOptions";
+import { parseTiming, TimeSlot, toggleFood, toggleSlot } from "./medicineTiming";
 
 type Nav = StackNavigationProp<CaregiverStackParamList, "UploadPrescription">;
 type Route = RouteProp<CaregiverStackParamList, "UploadPrescription">;
@@ -398,6 +401,71 @@ function OptionRow<T extends string | number>({
   );
 }
 
+// Checkbox semantics where OptionRow is radio: a twice-daily medicine is taken
+// morning AND night, and a row that can hold one answer cannot record that.
+function MultiOptionRow<T extends string | number>({
+  label,
+  options,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  options: Option<T>[];
+  selected: T[];
+  onToggle: (value: T) => void;
+}) {
+  return (
+    <View style={styles.optionBlock}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.optionRow}>
+        {options.map((option) => {
+          const isSelected = selected.includes(option.value);
+
+          return (
+            <TouchableOpacity
+              key={String(option.value)}
+              style={[styles.chip, isSelected && styles.chipSelected]}
+              onPress={() => onToggle(option.value)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: isSelected }}
+            >
+              <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                {isSelected ? "✓ " : ""}
+                {i18n.t(option.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// The label an option list gives a stored value, for the summary step.
+function optionLabel<T extends string | number>(
+  options: Option<T>[],
+  value: T | null | undefined
+): string | null {
+  const option = options.find((candidate) => candidate.value === value);
+  return option ? i18n.t(option.labelKey) : null;
+}
+
+function timingSummary(timing: string | null | undefined): string | null {
+  const { slots, food } = parseTiming(timing);
+  const parts = [
+    ...slots.map((slot) => optionLabel(TIME_OF_DAY_OPTIONS, slot)),
+    ...(food ? [optionLabel(FOOD_OPTIONS, food)] : []),
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+// One step at a time: the visit, then each medicine on its own page, then a
+// summary that confirms. The old layout pinned the visit card above a scrolling
+// medicine list, so no medicine was ever visible whole — and this screen is
+// where doses and frequencies get checked, which is exactly where a half-seen
+// card causes a wrong medicine schedule. Back and Next move freely once a step
+// is complete, and the summary jumps back to any step to fix it.
 function ReviewState({
   medicines,
   reviewedIndexes,
@@ -423,6 +491,17 @@ function ReviewState({
   onConfirm: () => void;
   isConfirming: boolean;
 }) {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  // Steps: visit details, one per medicine, then the summary. Clamped rather
+  // than tracked on removal: deleting the last medicine from its own step
+  // would otherwise leave the index pointing past the end.
+  const totalSteps = medicines.length + 2;
+  const step = Math.min(stepIndex, totalSteps - 1);
+  const isVisitStep = step === 0;
+  const isSummaryStep = step === totalSteps - 1;
+  const medicineIndex = step - 1;
+
   // A row missing a name or a frequency cannot be saved. The scheduler places
   // reminders from frequency, and the server refuses to invent one — so a row
   // confirmed blank would sit in the medicine list reminding nobody.
@@ -433,265 +512,478 @@ function ReviewState({
   const dateIsValid = isValidVisitDate(visitEdits.visit_date);
   const confirmable = canConfirm(medicines, reviewedIndexes) && dateIsValid;
 
+  // Forwards is gated per step so the caregiver settles each page before the
+  // next, and the summary's Confirm is a confirmation rather than the place
+  // every earlier omission surfaces. Backwards is always free.
+  let nextEnabled = true;
+  let nextHint: string | null = null;
+  if (isVisitStep) {
+    nextEnabled = dateIsValid;
+    if (!nextEnabled) nextHint = i18n.t("prescription.visitDateInvalid");
+  } else if (!isSummaryStep) {
+    const medicine = medicines[medicineIndex];
+    const isReviewed = reviewedIndexes.includes(medicineIndex);
+    nextEnabled = medicineStepComplete(medicine, isReviewed);
+    if (!nextEnabled) {
+      const onlyUnreviewed =
+        medicine.confidence === "low" &&
+        !isReviewed &&
+        (medicine.name ?? "").trim() !== "" &&
+        !needsFrequency(medicine);
+      nextHint = i18n.t(
+        onlyUnreviewed
+          ? "prescription.checkBeforeNext"
+          : "prescription.stepIncomplete"
+      );
+    }
+  }
+
+  const stepTitle = isVisitStep
+    ? i18n.t("prescription.visitDetails")
+    : isSummaryStep
+      ? i18n.t("prescription.confirmStep")
+      : i18n.t("prescription.medicineStep", {
+          current: medicineIndex + 1,
+          total: medicines.length,
+        });
+
   return (
     <View style={styles.reviewContainer}>
-      <Text style={styles.reviewTitle}>
-        {i18n.t("prescription.reviewTitle")}
-      </Text>
-      <Text style={styles.reviewHint}>
-        {i18n.t("prescription.reviewHint")}
-      </Text>
-
-      {/* The visit itself. These were extracted and then thrown away at confirm,
-          so the doctor was never recorded and every visit date became today. */}
-      <View style={styles.visitCard}>
-        <Text style={styles.fieldLabel}>{i18n.t("prescription.doctorName")}</Text>
-        <TextInput
-          style={styles.nameInput}
-          value={visitEdits.doctor_name}
-          onChangeText={(doctor_name) => onUpdateVisit({ doctor_name })}
-          placeholder={i18n.t("prescription.notOnPrescription")}
-        />
-
-        <Text style={styles.fieldLabel}>{i18n.t("prescription.hospitalClinic")}</Text>
-        <TextInput
-          style={styles.nameInput}
-          value={visitEdits.hospital_clinic}
-          onChangeText={(hospital_clinic) => onUpdateVisit({ hospital_clinic })}
-          placeholder={i18n.t("prescription.notOnPrescription")}
-        />
-
-        <Text style={styles.fieldLabel}>{i18n.t("prescription.visitDate")}</Text>
-        <TextInput
-          style={[styles.nameInput, !dateIsValid && styles.nameInputLow]}
-          value={visitEdits.visit_date}
-          onChangeText={(visit_date) => onUpdateVisit({ visit_date })}
-          placeholder="DD/MM/YYYY"
-        />
-        {!dateIsValid && (
-          <Text style={styles.dateError}>{i18n.t("prescription.visitDateInvalid")}</Text>
-        )}
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepCount}>
+          {i18n.t("prescription.stepOf", { current: step + 1, total: totalSteps })}
+        </Text>
+        <Text style={styles.reviewTitle}>{stepTitle}</Text>
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${((step + 1) / totalSteps) * 100}%` },
+            ]}
+          />
+        </View>
       </View>
 
       <ScrollView
-        style={styles.medicinesList}
-        contentContainerStyle={styles.medicinesContent}
+        style={styles.stepScroll}
+        contentContainerStyle={styles.stepContent}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
       >
-        {medicines.map((med, index) => {
-          const isLow = med.confidence === "low";
-          const isMedium = med.confidence === "medium";
-          const isReviewed = reviewedIndexes.includes(index);
-          return (
-            <View
-              key={index}
-              style={[
-                styles.medicineCard,
-                isMedium && styles.medicineCardMedium,
-                isLow && styles.medicineCardLow,
-              ]}
-            >
-              {isLow && (
-                <View style={styles.lowBadge}>
-                  <Text style={styles.lowBadgeText}>
-                    ⚠ {i18n.t("prescription.attentionNeeded")}
-                  </Text>
-                </View>
-              )}
-              {isMedium && (
-                <View style={styles.mediumBadge}>
-                  <Text style={styles.mediumBadgeText}>
-                    {i18n.t("prescription.pleaseCheck")}
-                  </Text>
-                </View>
-              )}
-              {/* Shown on every row, not only uncertain ones: this is the text
-                  the caregiver is checking the fields against. */}
-              {med.raw_text && (
-                <View style={styles.rawTextBox}>
-                  <Text style={styles.rawTextLabel}>
-                    {i18n.t("prescription.asWritten")}
-                  </Text>
-                  <Text style={styles.rawTextValue}>{med.raw_text}</Text>
-                </View>
-              )}
-              <Text style={styles.fieldLabel}>
-                {i18n.t("prescription.medicineName")} *
-              </Text>
-              <TextInput
-                style={[styles.nameInput, isLow && styles.nameInputLow]}
-                value={med.name}
-                onChangeText={(text) => onUpdateField(index, { name: text })}
-                placeholder={i18n.t("prescription.nameRequired")}
-              />
+        {isVisitStep && (
+          <VisitStep
+            visitEdits={visitEdits}
+            dateIsValid={dateIsValid}
+            onUpdateVisit={onUpdateVisit}
+          />
+        )}
 
-              <View style={styles.inlineFields}>
-                <View style={styles.inlineField}>
-                  <Text style={styles.fieldLabel}>
-                    {i18n.t("prescription.strength")}
-                  </Text>
-                  <TextInput
-                    style={styles.smallInput}
-                    value={med.strength ?? ""}
-                    onChangeText={(text) =>
-                      onUpdateField(index, { strength: text })
-                    }
-                  />
-                </View>
-                <View style={styles.inlineField}>
-                  <Text style={styles.fieldLabel}>
-                    {i18n.t("prescription.dose")}
-                  </Text>
-                  <TextInput
-                    style={styles.smallInput}
-                    value={med.dose ?? ""}
-                    onChangeText={(text) => onUpdateField(index, { dose: text })}
-                  />
-                </View>
-                <View style={styles.inlineField}>
-                  <Text style={styles.fieldLabel}>
-                    {i18n.t("prescription.durationDays")}
-                  </Text>
-                  <TextInput
-                    style={styles.smallInput}
-                    value={med.duration_days ? String(med.duration_days) : ""}
-                    onChangeText={(text) =>
-                      onUpdateField(index, {
-                        duration_days: text.replace(/\D/g, "")
-                          ? Number(text.replace(/\D/g, ""))
-                          : null,
-                      })
-                    }
-                    keyboardType="number-pad"
-                  />
-                </View>
-              </View>
+        {!isVisitStep && !isSummaryStep && (
+          <MedicineStep
+            medicine={medicines[medicineIndex]}
+            index={medicineIndex}
+            isReviewed={reviewedIndexes.includes(medicineIndex)}
+            onUpdateField={onUpdateField}
+            onMarkReviewed={onMarkReviewed}
+            onRemove={onRemove}
+          />
+        )}
 
-              {/* Every field below is one the reminder scheduler reads, so all of
-                  them are predefined values rather than free text: a typed word
-                  the server does not recognise would save, display, and quietly
-                  never remind anyone. */}
-              <OptionRow
-                label={i18n.t("prescription.howOften")}
-                options={FREQUENCY_OPTIONS}
-                selected={med.frequency}
-                onSelect={(frequency) => onUpdateField(index, { frequency })}
-                required={needsFrequency(med)}
-              />
-
-              <OptionRow
-                label={i18n.t("prescription.whenToTake")}
-                options={TIMING_OPTIONS}
-                selected={med.timing}
-                onSelect={(timing) => onUpdateField(index, { timing })}
-              />
-
-              <OptionRow
-                label={i18n.t("prescription.intervalDaily")}
-                options={INTERVAL_OPTIONS}
-                selected={med.dosing_interval ?? "daily"}
-                onSelect={(dosing_interval) =>
-                  onUpdateField(index, {
-                    dosing_interval: dosing_interval as DosingInterval,
-                    // A weekday only means anything for a weekly dose; leaving a
-                    // stale one behind would send the server a contradiction.
-                    dosing_weekday:
-                      dosing_interval === "weekly" ? med.dosing_weekday ?? 0 : null,
-                  })
-                }
-              />
-
-              {med.dosing_interval === "weekly" && (
-                <OptionRow
-                  label={i18n.t("prescription.whichDay")}
-                  options={WEEKDAY_OPTIONS}
-                  selected={med.dosing_weekday ?? 0}
-                  onSelect={(dosing_weekday) =>
-                    onUpdateField(index, { dosing_weekday })
-                  }
-                />
-              )}
-
-              {doseInstruction(med) && (
-                <View style={styles.instructionsBox}>
-                  <Text style={styles.instructionsLabel}>
-                    {i18n.t("session.instructions")}
-                  </Text>
-                  <Text style={styles.instructionsText}>
-                    {doseInstruction(med)}
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.cardActions}>
-                {isLow && (
-                  <TouchableOpacity
-                    style={[
-                      styles.reviewedButton,
-                      isReviewed && styles.reviewedButtonDone,
-                    ]}
-                    onPress={() => onMarkReviewed(index)}
-                    disabled={isReviewed}
-                    accessibilityRole="button"
-                  >
-                    <Text
-                      style={[
-                        styles.reviewedButtonText,
-                        isReviewed && styles.reviewedButtonTextDone,
-                      ]}
-                    >
-                      {isReviewed
-                        ? `✓ ${i18n.t("prescription.reviewed")}`
-                        : i18n.t("prescription.markReviewed")}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => onRemove(index)}
-                  accessibilityRole="button"
-                  accessibilityLabel={i18n.t("prescription.removeMedicine")}
-                >
-                  <Text style={styles.removeButtonText}>
-                    {i18n.t("prescription.removeMedicine")}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
-
-        <TouchableOpacity
-          style={styles.addMedicineButton}
-          onPress={onAdd}
-          accessibilityRole="button"
-          accessibilityLabel={i18n.t("prescription.addMedicine")}
-        >
-          <Text style={styles.addMedicineText}>
-            {i18n.t("prescription.addMedicine")}
-          </Text>
-        </TouchableOpacity>
+        {isSummaryStep && (
+          <SummaryStep
+            medicines={medicines}
+            reviewedIndexes={reviewedIndexes}
+            visitEdits={visitEdits}
+            onJumpToStep={setStepIndex}
+            onAdd={() => {
+              // The new medicine's step: it lands at the end of the list, one
+              // step before this summary.
+              onAdd();
+              setStepIndex(medicines.length + 1);
+            }}
+          />
+        )}
       </ScrollView>
 
+      {nextHint && <Text style={styles.navHint}>{nextHint}</Text>}
+
+      <View style={styles.stepNav}>
+        {step > 0 && (
+          <TouchableOpacity
+            style={styles.backStepButton}
+            onPress={() => setStepIndex(step - 1)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.backStepText}>{i18n.t("common.back")}</Text>
+          </TouchableOpacity>
+        )}
+
+        {!isSummaryStep ? (
+          <TouchableOpacity
+            style={[styles.nextButton, !nextEnabled && styles.confirmButtonDisabled]}
+            onPress={() => setStepIndex(step + 1)}
+            disabled={!nextEnabled}
+            accessibilityRole="button"
+          >
+            <Text style={styles.confirmText}>{i18n.t("common.next")}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              (isConfirming || !confirmable) && styles.confirmButtonDisabled,
+            ]}
+            onPress={onConfirm}
+            disabled={isConfirming || !confirmable}
+            accessibilityRole="button"
+          >
+            <Text style={styles.confirmText}>
+              {isConfirming
+                ? i18n.t("prescription.confirming")
+                : unreviewedLowCount > 0
+                  ? i18n.t("prescription.unreviewedCount", {
+                      count: unreviewedLowCount,
+                    })
+                  : incompleteCount > 0
+                    ? i18n.t("prescription.fixBeforeSaving", {
+                        count: incompleteCount,
+                      })
+                    : i18n.t("prescription.confirmMedicines")}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// The visit itself. These were extracted and then thrown away at confirm, so
+// the doctor was never recorded and every visit date became today.
+function VisitStep({
+  visitEdits,
+  dateIsValid,
+  onUpdateVisit,
+}: {
+  visitEdits: VisitEdits;
+  dateIsValid: boolean;
+  onUpdateVisit: (patch: Partial<VisitEdits>) => void;
+}) {
+  return (
+    <View style={styles.visitCard}>
+      <Text style={styles.fieldLabel}>{i18n.t("prescription.doctorName")}</Text>
+      <TextInput
+        style={styles.nameInput}
+        value={visitEdits.doctor_name}
+        onChangeText={(doctor_name) => onUpdateVisit({ doctor_name })}
+        placeholder={i18n.t("prescription.notOnPrescription")}
+      />
+
+      <Text style={styles.fieldLabel}>{i18n.t("prescription.hospitalClinic")}</Text>
+      <TextInput
+        style={styles.nameInput}
+        value={visitEdits.hospital_clinic}
+        onChangeText={(hospital_clinic) => onUpdateVisit({ hospital_clinic })}
+        placeholder={i18n.t("prescription.notOnPrescription")}
+      />
+
+      <Text style={styles.fieldLabel}>{i18n.t("prescription.visitDate")}</Text>
+      <TextInput
+        style={[styles.nameInput, !dateIsValid && styles.nameInputLow]}
+        value={visitEdits.visit_date}
+        onChangeText={(visit_date) => onUpdateVisit({ visit_date })}
+        placeholder="DD/MM/YYYY"
+      />
+      {!dateIsValid && (
+        <Text style={styles.dateError}>{i18n.t("prescription.visitDateInvalid")}</Text>
+      )}
+    </View>
+  );
+}
+
+function MedicineStep({
+  medicine: med,
+  index,
+  isReviewed,
+  onUpdateField,
+  onMarkReviewed,
+  onRemove,
+}: {
+  medicine: ExtractedMedicine;
+  index: number;
+  isReviewed: boolean;
+  onUpdateField: (index: number, patch: Partial<ExtractedMedicine>) => void;
+  onMarkReviewed: (index: number) => void;
+  onRemove: (index: number) => void;
+}) {
+  const isLow = med.confidence === "low";
+  const isMedium = med.confidence === "medium";
+  const timing = parseTiming(med.timing);
+
+  return (
+    <View
+      style={[
+        styles.medicineCard,
+        isMedium && styles.medicineCardMedium,
+        isLow && styles.medicineCardLow,
+      ]}
+    >
+      {isLow && (
+        <View style={styles.lowBadge}>
+          <Text style={styles.lowBadgeText}>
+            ⚠ {i18n.t("prescription.attentionNeeded")}
+          </Text>
+        </View>
+      )}
+      {isMedium && (
+        <View style={styles.mediumBadge}>
+          <Text style={styles.mediumBadgeText}>
+            {i18n.t("prescription.pleaseCheck")}
+          </Text>
+        </View>
+      )}
+      {/* Shown on every row, not only uncertain ones: this is the text the
+          caregiver is checking the fields against. */}
+      {med.raw_text && (
+        <View style={styles.rawTextBox}>
+          <Text style={styles.rawTextLabel}>
+            {i18n.t("prescription.asWritten")}
+          </Text>
+          <Text style={styles.rawTextValue}>{med.raw_text}</Text>
+        </View>
+      )}
+      <Text style={styles.fieldLabel}>
+        {i18n.t("prescription.medicineName")} *
+      </Text>
+      <TextInput
+        style={[styles.nameInput, isLow && styles.nameInputLow]}
+        value={med.name}
+        onChangeText={(text) => onUpdateField(index, { name: text })}
+        placeholder={i18n.t("prescription.nameRequired")}
+      />
+
+      <View style={styles.inlineFields}>
+        <View style={styles.inlineField}>
+          <Text style={styles.fieldLabel}>
+            {i18n.t("prescription.strength")}
+          </Text>
+          <TextInput
+            style={styles.smallInput}
+            value={med.strength ?? ""}
+            onChangeText={(text) => onUpdateField(index, { strength: text })}
+          />
+        </View>
+        <View style={styles.inlineField}>
+          <Text style={styles.fieldLabel}>{i18n.t("prescription.dose")}</Text>
+          <TextInput
+            style={styles.smallInput}
+            value={med.dose ?? ""}
+            onChangeText={(text) => onUpdateField(index, { dose: text })}
+          />
+        </View>
+        <View style={styles.inlineField}>
+          <Text style={styles.fieldLabel}>
+            {i18n.t("prescription.durationDays")}
+          </Text>
+          <TextInput
+            style={styles.smallInput}
+            value={med.duration_days ? String(med.duration_days) : ""}
+            onChangeText={(text) =>
+              onUpdateField(index, {
+                duration_days: text.replace(/\D/g, "")
+                  ? Number(text.replace(/\D/g, ""))
+                  : null,
+              })
+            }
+            keyboardType="number-pad"
+          />
+        </View>
+      </View>
+
+      {/* Every field below is one the reminder scheduler reads, so all of them
+          are predefined values rather than free text: a typed word the server
+          does not recognise would save, display, and quietly never remind
+          anyone. */}
+      <OptionRow
+        label={i18n.t("prescription.howOften")}
+        options={FREQUENCY_OPTIONS}
+        selected={med.frequency}
+        onSelect={(frequency) => onUpdateField(index, { frequency })}
+        required={needsFrequency(med)}
+      />
+
+      {/* Two questions, two rows. Times of day multi-select — a twice-daily
+          medicine is morning AND night — while the food relation is a separate
+          either-or, so "morning, night, after food" is finally sayable. */}
+      <MultiOptionRow
+        label={i18n.t("prescription.whenToTake")}
+        options={TIME_OF_DAY_OPTIONS}
+        selected={timing.slots}
+        onToggle={(slot: TimeSlot) =>
+          onUpdateField(index, { timing: toggleSlot(med.timing, slot) })
+        }
+      />
+
+      <OptionRow
+        label={i18n.t("prescription.foodRelation")}
+        options={FOOD_OPTIONS}
+        selected={timing.food}
+        onSelect={(food) =>
+          onUpdateField(index, { timing: toggleFood(med.timing, food) })
+        }
+      />
+
+      <OptionRow
+        label={i18n.t("prescription.intervalDaily")}
+        options={INTERVAL_OPTIONS}
+        selected={med.dosing_interval ?? "daily"}
+        onSelect={(dosing_interval) =>
+          onUpdateField(index, {
+            dosing_interval: dosing_interval as DosingInterval,
+            // A weekday only means anything for a weekly dose; leaving a
+            // stale one behind would send the server a contradiction.
+            dosing_weekday:
+              dosing_interval === "weekly" ? med.dosing_weekday ?? 0 : null,
+          })
+        }
+      />
+
+      {med.dosing_interval === "weekly" && (
+        <OptionRow
+          label={i18n.t("prescription.whichDay")}
+          options={WEEKDAY_OPTIONS}
+          selected={med.dosing_weekday ?? 0}
+          onSelect={(dosing_weekday) => onUpdateField(index, { dosing_weekday })}
+        />
+      )}
+
+      {doseInstruction(med) && (
+        <View style={styles.instructionsBox}>
+          <Text style={styles.instructionsLabel}>
+            {i18n.t("session.instructions")}
+          </Text>
+          <Text style={styles.instructionsText}>{doseInstruction(med)}</Text>
+        </View>
+      )}
+
+      <View style={styles.cardActions}>
+        {isLow && (
+          <TouchableOpacity
+            style={[
+              styles.reviewedButton,
+              isReviewed && styles.reviewedButtonDone,
+            ]}
+            onPress={() => onMarkReviewed(index)}
+            disabled={isReviewed}
+            accessibilityRole="button"
+          >
+            <Text
+              style={[
+                styles.reviewedButtonText,
+                isReviewed && styles.reviewedButtonTextDone,
+              ]}
+            >
+              {isReviewed
+                ? `✓ ${i18n.t("prescription.reviewed")}`
+                : i18n.t("prescription.markReviewed")}
+            </Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => onRemove(index)}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t("prescription.removeMedicine")}
+        >
+          <Text style={styles.removeButtonText}>
+            {i18n.t("prescription.removeMedicine")}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// The last look before saving: every medicine in one glance, each row a way
+// back to its step. Rows that would block confirmation are flagged here too,
+// so the disabled Confirm always has a visible reason above it.
+function SummaryStep({
+  medicines,
+  reviewedIndexes,
+  visitEdits,
+  onJumpToStep,
+  onAdd,
+}: {
+  medicines: ExtractedMedicine[];
+  reviewedIndexes: number[];
+  visitEdits: VisitEdits;
+  onJumpToStep: (step: number) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <View>
+      <Text style={styles.reviewHintSummary}>
+        {i18n.t("prescription.summaryHint")}
+      </Text>
+
       <TouchableOpacity
-        style={[
-          styles.confirmButton,
-          (isConfirming || !confirmable) && styles.confirmButtonDisabled,
-        ]}
-        onPress={onConfirm}
-        disabled={isConfirming || !confirmable}
+        style={styles.summaryRow}
+        onPress={() => onJumpToStep(0)}
+        accessibilityRole="button"
       >
-        <Text style={styles.confirmText}>
-          {isConfirming
-            ? i18n.t("prescription.confirming")
-            : unreviewedLowCount > 0
-              ? i18n.t("prescription.unreviewedCount", {
-                  count: unreviewedLowCount,
-                })
-              : incompleteCount > 0
-                ? i18n.t("prescription.fixBeforeSaving", { count: incompleteCount })
-                : i18n.t("prescription.confirmMedicines")}
+        <View style={styles.summaryRowBody}>
+          <Text style={styles.summaryName}>
+            {visitEdits.doctor_name.trim() ||
+              i18n.t("prescription.notOnPrescription")}
+          </Text>
+          <Text style={styles.summaryDetail}>
+            {[visitEdits.hospital_clinic.trim(), visitEdits.visit_date.trim()]
+              .filter(Boolean)
+              .join(" · ") || i18n.t("prescription.visitDetails")}
+          </Text>
+        </View>
+        <Text style={styles.summaryChevron}>›</Text>
+      </TouchableOpacity>
+
+      {medicines.map((med, index) => {
+        const complete = medicineStepComplete(
+          med,
+          reviewedIndexes.includes(index)
+        );
+        const details = [
+          optionLabel(FREQUENCY_OPTIONS, med.frequency),
+          timingSummary(med.timing),
+        ].filter(Boolean);
+
+        return (
+          <TouchableOpacity
+            key={index}
+            style={[styles.summaryRow, !complete && styles.summaryRowWarn]}
+            onPress={() => onJumpToStep(index + 1)}
+            accessibilityRole="button"
+          >
+            <View style={styles.summaryRowBody}>
+              <Text style={styles.summaryName}>
+                {med.name.trim() || i18n.t("prescription.nameRequired")}
+              </Text>
+              <Text style={styles.summaryDetail}>
+                {details.join(" · ") || i18n.t("prescription.notSet")}
+              </Text>
+            </View>
+            <Text style={styles.summaryChevron}>
+              {complete ? "›" : "⚠"}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+
+      <TouchableOpacity
+        style={styles.addMedicineButton}
+        onPress={onAdd}
+        accessibilityRole="button"
+        accessibilityLabel={i18n.t("prescription.addMedicine")}
+      >
+        <Text style={styles.addMedicineText}>
+          {i18n.t("prescription.addMedicine")}
         </Text>
       </TouchableOpacity>
     </View>
@@ -722,8 +1014,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 14,
-    marginHorizontal: 16,
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
@@ -930,25 +1220,109 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
   },
+  stepHeader: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  stepCount: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
   reviewTitle: {
     fontSize: FONT_SIZES.large,
     fontWeight: "bold",
     color: COLORS.text,
-    paddingHorizontal: 16,
   },
-  reviewHint: {
-    fontSize: FONT_SIZES.small,
-    color: COLORS.textSecondary,
-    paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 12,
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.cardBorder,
+    marginTop: 10,
+    overflow: "hidden",
   },
-  medicinesList: {
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+  },
+  stepScroll: {
     flex: 1,
   },
-  medicinesContent: {
+  stepContent: {
     paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  reviewHintSummary: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  summaryRowWarn: {
+    borderColor: COLORS.warning,
+    borderWidth: 2,
+  },
+  summaryRowBody: {
+    flex: 1,
+  },
+  summaryName: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  summaryDetail: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  summaryChevron: {
+    fontSize: FONT_SIZES.large,
+    color: COLORS.textSecondary,
+    marginLeft: 10,
+  },
+  navHint: {
+    fontSize: FONT_SIZES.small,
+    color: COLORS.error,
+    textAlign: "center",
+    marginHorizontal: 16,
+    marginBottom: 6,
+  },
+  stepNav: {
+    flexDirection: "row",
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 32,
+  },
+  backStepButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+  },
+  backStepText: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.large,
+    fontWeight: "bold",
+  },
+  nextButton: {
+    flex: 2,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: "center",
   },
   medicineCard: {
     backgroundColor: COLORS.white,
@@ -1078,14 +1452,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.medium,
     color: COLORS.text,
     lineHeight: 24,
-  },
-  confirmButton: {
-    backgroundColor: COLORS.primary,
-    marginHorizontal: 16,
-    marginBottom: 32,
-    paddingVertical: 16,
-    borderRadius: 10,
-    alignItems: "center",
   },
   confirmButtonDisabled: {
     opacity: 0.6,
