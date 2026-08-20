@@ -42,7 +42,46 @@ describe("parseTiming", () => {
   it("is empty for null, undefined and unrecognised text", () => {
     expect(parseTiming(null)).toEqual({ slots: [], food: null });
     expect(parseTiming(undefined)).toEqual({ slots: [], food: null });
-    expect(parseTiming("खाने के बाद")).toEqual({ slots: [], food: null });
+    expect(parseTiming("with plenty of water")).toEqual({ slots: [], food: null });
+  });
+
+  // Extraction records timing as "the Hindi as written" whenever the
+  // prescription does, and the server reads both languages. Reading only
+  // English left every chip dark on a Hindi timing, so the caregiver saw "not
+  // set" and a tap to fill the blank replaced what the doctor wrote.
+  it("reads the Hindi extraction writes", () => {
+    expect(parseTiming("खाने के बाद")).toEqual({
+      slots: [],
+      food: "after food",
+    });
+    expect(parseTiming("सुबह")).toEqual({ slots: ["morning"], food: null });
+    expect(parseTiming("दोपहर")).toEqual({ slots: ["afternoon"], food: null });
+    expect(parseTiming("शाम")).toEqual({ slots: ["evening"], food: null });
+    expect(parseTiming("सोने से पहले")).toEqual({ slots: ["night"], food: null });
+  });
+
+  it("reads a Hindi meal instruction as both the slot and the relation", () => {
+    // "after the night meal" — रात names the slot, and the relation is its own
+    // answer. The whole line is one string on the wire.
+    expect(parseTiming("रात का खाना के बाद")).toEqual({
+      slots: ["night"],
+      food: "after food",
+    });
+  });
+
+  it("reads नाश्ते के बाद as a morning dose", () => {
+    expect(parseTiming("नाश्ते के बाद")).toEqual({
+      slots: ["morning"],
+      food: null,
+    });
+  });
+
+  // The regression this guards: the night dose survives the caregiver adding
+  // a morning one, instead of being replaced by it.
+  it("keeps a Hindi night dose when a morning one is added", () => {
+    expect(toggleSlot("रात का खाना के बाद", "morning")).toBe(
+      "morning, night, after food"
+    );
   });
 });
 

@@ -23,18 +23,34 @@ export const TIME_SLOTS: TimeSlot[] = [
 // Synonyms mirror the server's SLOT_WORDS: extraction writes "bedtime" or
 // "after breakfast" as readily as the canonical words, and the chips should
 // light up for whatever it wrote.
+//
+// Hindi is matched too, and is not optional. The extraction schema records
+// timing as "before food, after food, morning, night, or the Hindi as
+// written", and the server reads both languages. A client reading only English
+// leaves every chip dark for a Hindi timing — so a caregiver sees "not set" on
+// a prescription that did say when to take it, and a chip tapped to fill the
+// apparent blank replaces the Hindi with only what they picked. A night dose
+// written "रात का खाना के बाद" would silently become a morning one.
+//
+// No \b around the Devanagari: JavaScript word boundaries are defined on
+// [A-Za-z0-9_], so \b next to a Hindi letter matches in the wrong places. The
+// server drops it for the same reason.
 const SLOT_MATCHERS: [TimeSlot, RegExp][] = [
-  ["morning", /\b(?:morning|breakfast)\b/],
-  ["afternoon", /\b(?:noon|afternoon|lunch)\b/],
-  ["evening", /\bevening\b/],
-  ["night", /\b(?:night|dinner|bedtime|sleep)\b/],
+  ["morning", /\b(?:morning|breakfast)\b|सुबह|नाश्ता|नाश्ते/],
+  ["afternoon", /\b(?:noon|afternoon|lunch)\b|दोपहर/],
+  ["evening", /\bevening\b|शाम/],
+  ["night", /\b(?:night|dinner|bedtime|sleep)\b|रात|सोने/],
 ];
 
 // "meal" alongside "food" because extraction writes "After Meal" for the 0-0-1
 // grid shorthand on Indian prescriptions.
+//
+// Hindi puts the relation after the noun — "खाने के बाद" is meal-after — so the
+// English preposition-first shape does not transfer and needs its own pattern.
+// खाना inflects to खाने before a postposition, so both forms are listed.
 const FOOD_MATCHERS: [FoodRelation, RegExp][] = [
-  ["before food", /\bbefore\s+(?:food|meals?|eating)\b/],
-  ["after food", /\bafter\s+(?:food|meals?|eating)\b/],
+  ["before food", /\bbefore\s+(?:food|meals?|eating)\b|(?:खाने|खाना|भोजन)\s*से\s*पहले/],
+  ["after food", /\bafter\s+(?:food|meals?|eating)\b|(?:खाने|खाना|भोजन)\s*के\s*बाद/],
 ];
 
 export interface ParsedTiming {
