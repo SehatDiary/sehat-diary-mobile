@@ -4,6 +4,7 @@ import {
   countMissingName,
   countUnreviewedLowConfidence,
   isMeaningfulEdit,
+  medicineStepComplete,
   needsFrequency,
 } from "../reviewGate";
 
@@ -87,6 +88,37 @@ describe("a schedule the app can actually place", () => {
 
   it("allows a fully specified row", () => {
     expect(canConfirm([med("high")], [])).toBe(true);
+  });
+});
+
+describe("wizard step gate", () => {
+  it("lets a complete high-confidence row move on", () => {
+    expect(medicineStepComplete(med("high"), false)).toBe(true);
+  });
+
+  it("holds a row without a name", () => {
+    expect(medicineStepComplete(med("high", { name: " " }), false)).toBe(false);
+  });
+
+  it("holds a row without a frequency, unless as-needed", () => {
+    expect(medicineStepComplete(med("high", { frequency: null }), false)).toBe(
+      false
+    );
+    expect(
+      medicineStepComplete(
+        med("high", { frequency: null, dosing_interval: "as_needed" }),
+        false
+      )
+    ).toBe(true);
+  });
+
+  it("holds a low-confidence row until the caregiver has checked it", () => {
+    expect(medicineStepComplete(med("low"), false)).toBe(false);
+    expect(medicineStepComplete(med("low"), true)).toBe(true);
+  });
+
+  it("does not ask medium rows for an explicit check", () => {
+    expect(medicineStepComplete(med("medium"), false)).toBe(true);
   });
 });
 

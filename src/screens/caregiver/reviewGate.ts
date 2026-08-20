@@ -58,6 +58,25 @@ export function countMissingName(
   return medicines.filter((medicine) => !(medicine.name ?? "").trim()).length;
 }
 
+// Whether one medicine's wizard step can be left forwards. The same three
+// things canConfirm checks across the whole list, asked of a single row: a
+// name, a frequency (unless as-needed), and — for a low-confidence extraction —
+// the caregiver's explicit word that they checked it. Gating Next per step is
+// what lets the final Confirm be an actual confirmation rather than the place
+// every earlier omission is discovered.
+export function medicineStepComplete(
+  medicine: Pick<
+    ExtractedMedicine,
+    "confidence" | "frequency" | "dosing_interval" | "name"
+  >,
+  isReviewed: boolean
+): boolean {
+  if (!(medicine.name ?? "").trim()) return false;
+  if (needsFrequency(medicine)) return false;
+
+  return medicine.confidence !== "low" || isReviewed;
+}
+
 export function canConfirm(
   medicines: Pick<
     ExtractedMedicine,

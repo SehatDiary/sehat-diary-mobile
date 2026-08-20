@@ -1,4 +1,5 @@
 import { DosingInterval } from "../../types";
+import { FoodRelation, TimeSlot } from "./medicineTiming";
 
 // Predefined values for every field the reminder scheduler reads.
 //
@@ -25,13 +26,18 @@ export const FREQUENCY_OPTIONS: Option<string>[] = [
 
 // Slot words place the dose; food relations do not, and the server treats them
 // that way too — "after food" says when to eat around a dose, not what hour it
-// falls at. Both are offered because a prescription usually states one or the
-// other, and the caregiver should be able to record what it actually says.
-export const TIMING_OPTIONS: Option<string>[] = [
+// falls at. They used to share one single-select row, which made "morning and
+// night, after food" — the commonest instruction on an Indian prescription —
+// impossible to record. Slots are multi-select; the food relation is its own
+// either-or row.
+export const TIME_OF_DAY_OPTIONS: Option<TimeSlot>[] = [
   { value: "morning", labelKey: "prescription.timingMorning" },
   { value: "afternoon", labelKey: "prescription.timingAfternoon" },
   { value: "evening", labelKey: "prescription.timingEvening" },
   { value: "night", labelKey: "prescription.timingNight" },
+];
+
+export const FOOD_OPTIONS: Option<FoodRelation>[] = [
   { value: "before food", labelKey: "prescription.timingBeforeFood" },
   { value: "after food", labelKey: "prescription.timingAfterFood" },
 ];
