@@ -28,12 +28,15 @@ import i18n from "../../i18n";
 import { doseInstruction } from "../../i18n/instruction";
 import {
   canConfirm,
+  countExceedingSlotLimit,
   countMissingFrequency,
   countMissingName,
   countUnreviewedLowConfidence,
+  exceedsSlotLimit,
   isMeaningfulEdit,
   medicineStepComplete,
   needsFrequency,
+  slotLimit,
 } from "./reviewGate";
 import {
   buildConfirmedData,
@@ -502,11 +505,15 @@ function ReviewState({
   const isSummaryStep = step === totalSteps - 1;
   const medicineIndex = step - 1;
 
-  // A row missing a name or a frequency cannot be saved. The scheduler places
-  // reminders from frequency, and the server refuses to invent one — so a row
-  // confirmed blank would sit in the medicine list reminding nobody.
+  // A row missing a name or a frequency cannot be saved, and one naming more
+  // times of day than its frequency prescribes doses contradicts itself. The
+  // scheduler places reminders from these fields, and the server refuses to
+  // invent a schedule — so a row confirmed broken would sit in the medicine
+  // list reminding nobody, or reminding at times the doctor never chose.
   const incompleteCount =
-    countMissingFrequency(medicines) + countMissingName(medicines);
+    countMissingFrequency(medicines) +
+    countMissingName(medicines) +
+    countExceedingSlotLimit(medicines);
   // A date the server cannot parse falls back to today without saying so, which
   // is the failure this screen now exists to prevent.
   const dateIsValid = isValidVisitDate(visitEdits.visit_date);
@@ -529,7 +536,8 @@ function ReviewState({
         medicine.confidence === "low" &&
         !isReviewed &&
         (medicine.name ?? "").trim() !== "" &&
-        !needsFrequency(medicine);
+        !needsFrequency(medicine) &&
+        !exceedsSlotLimit(medicine);
       nextHint = i18n.t(
         onlyUnreviewed
           ? "prescription.checkBeforeNext"
@@ -822,6 +830,15 @@ function MedicineStep({
           onUpdateField(index, { timing: toggleSlot(med.timing, slot) })
         }
       />
+      {exceedsSlotLimit(med) && (
+        <Text style={styles.dateError}>
+          {i18n.t("prescription.tooManySlots", {
+            frequency:
+              optionLabel(FREQUENCY_OPTIONS, med.frequency) ?? med.frequency,
+            count: slotLimit(med.frequency) ?? 0,
+          })}
+        </Text>
+      )}
 
       <OptionRow
         label={i18n.t("prescription.foodRelation")}
@@ -832,8 +849,11 @@ function MedicineStep({
         }
       />
 
+      {/* Not intervalDaily: that key is the first chip's own label, and a
+          section headed by its first option read as a duplicate of How often.
+          This row is which days; How often is times per day. */}
       <OptionRow
-        label={i18n.t("prescription.intervalDaily")}
+        label={i18n.t("prescription.intervalLabel")}
         options={INTERVAL_OPTIONS}
         selected={med.dosing_interval ?? "daily"}
         onSelect={(dosing_interval) =>

@@ -1,11 +1,14 @@
 import {
   canConfirm,
+  countExceedingSlotLimit,
   countMissingFrequency,
   countMissingName,
   countUnreviewedLowConfidence,
+  exceedsSlotLimit,
   isMeaningfulEdit,
   medicineStepComplete,
   needsFrequency,
+  slotLimit,
 } from "../reviewGate";
 
 // Confirmable by default, so each test varies only the thing it is about.
@@ -88,6 +91,61 @@ describe("a schedule the app can actually place", () => {
 
   it("allows a fully specified row", () => {
     expect(canConfirm([med("high")], [])).toBe(true);
+  });
+});
+
+describe("slot-count validation", () => {
+  it("maps each frequency to its dose count", () => {
+    expect(slotLimit("once daily")).toBe(1);
+    expect(slotLimit("thrice daily")).toBe(3);
+    expect(slotLimit(null)).toBeNull();
+    expect(slotLimit("1-0-1")).toBeNull();
+  });
+
+  it("flags more times of day than the frequency prescribes", () => {
+    expect(
+      exceedsSlotLimit({ frequency: "once daily", timing: "morning, night" })
+    ).toBe(true);
+  });
+
+  it("allows exactly as many, or fewer", () => {
+    // Fewer is real information, not a gap: the server tops up from its
+    // standard spread.
+    expect(
+      exceedsSlotLimit({ frequency: "twice daily", timing: "morning, night" })
+    ).toBe(false);
+    expect(
+      exceedsSlotLimit({ frequency: "twice daily", timing: "morning" })
+    ).toBe(false);
+    expect(exceedsSlotLimit({ frequency: "twice daily", timing: null })).toBe(
+      false
+    );
+  });
+
+  it("does not count the food relation as a time of day", () => {
+    expect(
+      exceedsSlotLimit({
+        frequency: "once daily",
+        timing: "morning, after food",
+      })
+    ).toBe(false);
+  });
+
+  it("reads a Hindi timing the same way", () => {
+    expect(
+      exceedsSlotLimit({ frequency: "once daily", timing: "सुबह और रात" })
+    ).toBe(true);
+  });
+
+  it("blocks the step and the confirm alike", () => {
+    const contradicted = med("high", {
+      frequency: "once daily",
+      timing: "morning, night",
+    });
+
+    expect(medicineStepComplete(contradicted, false)).toBe(false);
+    expect(canConfirm([contradicted], [])).toBe(false);
+    expect(countExceedingSlotLimit([contradicted, med("high")])).toBe(1);
   });
 });
 
