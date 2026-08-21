@@ -1,11 +1,11 @@
 import {
   canConfirm,
-  countMissingFrequency,
-  countMissingName,
   countUnreviewedLowConfidence,
+  exceedsSlotLimit,
   isMeaningfulEdit,
   medicineStepComplete,
   needsFrequency,
+  slotLimit,
 } from "../reviewGate";
 
 // Confirmable by default, so each test varies only the thing it is about.
@@ -61,10 +61,7 @@ describe("a schedule the app can actually place", () => {
   it("blocks a row whose frequency was never stated", () => {
     // The server refuses to invent a schedule and flags the medicine instead,
     // so a row confirmed blank here reminds nobody, silently.
-    const medicines = [med("high", { frequency: null })];
-
-    expect(countMissingFrequency(medicines)).toBe(1);
-    expect(canConfirm(medicines, [])).toBe(false);
+    expect(canConfirm([med("high", { frequency: null })], [])).toBe(false);
   });
 
   it("treats whitespace as missing", () => {
@@ -75,19 +72,113 @@ describe("a schedule the app can actually place", () => {
     // "SOS" schedules nothing by design — a complete instruction, not a gap.
     const medicines = [med("high", { frequency: null, dosing_interval: "as_needed" })];
 
-    expect(countMissingFrequency(medicines)).toBe(0);
     expect(canConfirm(medicines, [])).toBe(true);
   });
 
   it("blocks a row left without a name", () => {
     const medicines = [med("high"), med("high", { name: "  " })];
 
-    expect(countMissingName(medicines)).toBe(1);
     expect(canConfirm(medicines, [])).toBe(false);
   });
 
   it("allows a fully specified row", () => {
     expect(canConfirm([med("high")], [])).toBe(true);
+  });
+});
+
+describe("slot-count validation", () => {
+  it("maps each canonical frequency to its dose count", () => {
+    expect(slotLimit("once daily")).toBe(1);
+    expect(slotLimit("thrice daily")).toBe(3);
+    expect(slotLimit(null)).toBeNull();
+  });
+
+  it("reads frequency the way the server does, not by exact string", () => {
+    // frequency is a free extraction string: the server downcases and
+    // word-matches, so the gate must too — an exact-match gate would skip
+    // exactly the rows the server still truncates.
+    expect(slotLimit("Once daily")).toBe(1);
+    expect(slotLimit("twice a day")).toBe(2);
+    expect(slotLimit("once daily (night only)")).toBe(1);
+    expect(slotLimit("2 times daily")).toBe(2);
+    expect(slotLimit("every morning")).toBeNull();
+  });
+
+  it("counts the doses in a grid frequency", () => {
+    // "1-0-1" is the Indian prescription's morning-afternoon-night grid:
+    // a dose per non-zero position.
+    expect(slotLimit("1-0-1")).toBe(2);
+    expect(slotLimit("0-0-1")).toBe(1);
+    expect(slotLimit("1-1-1")).toBe(3);
+    expect(slotLimit("0-0-0")).toBeNull();
+  });
+
+  it("flags more times of day than the frequency prescribes", () => {
+    expect(
+      exceedsSlotLimit({ frequency: "once daily", timing: "morning, night" })
+    ).toBe(true);
+  });
+
+  it("allows exactly as many, or fewer", () => {
+    // Fewer is real information, not a gap: the server tops up from its
+    // standard spread.
+    expect(
+      exceedsSlotLimit({ frequency: "twice daily", timing: "morning, night" })
+    ).toBe(false);
+    expect(
+      exceedsSlotLimit({ frequency: "twice daily", timing: "morning" })
+    ).toBe(false);
+    expect(exceedsSlotLimit({ frequency: "twice daily", timing: null })).toBe(
+      false
+    );
+  });
+
+  it("does not count the food relation as a time of day", () => {
+    expect(
+      exceedsSlotLimit({
+        frequency: "once daily",
+        timing: "morning, after food",
+      })
+    ).toBe(false);
+  });
+
+  it("reads a Hindi timing the same way", () => {
+    expect(
+      exceedsSlotLimit({ frequency: "once daily", timing: "सुबह और रात" })
+    ).toBe(true);
+  });
+
+  it("has no limit when the frequency is absent or unreadable", () => {
+    expect(exceedsSlotLimit({ frequency: null, timing: "morning, night" })).toBe(
+      false
+    );
+    expect(
+      exceedsSlotLimit({ frequency: "every morning", timing: "morning, night" })
+    ).toBe(false);
+  });
+
+  it("exempts an as-needed medicine", () => {
+    // The server schedules nothing for SOS, so a leftover frequency against
+    // leftover timing slots is not a contradiction anyone will be reminded
+    // by — blocking would force deleting real prescription guidance.
+    expect(
+      exceedsSlotLimit({
+        frequency: "once daily",
+        timing: "morning, night",
+        dosing_interval: "as_needed",
+      })
+    ).toBe(false);
+  });
+
+  it("blocks the step and the confirm alike", () => {
+    const contradicted = med("high", {
+      frequency: "once daily",
+      timing: "morning, night",
+    });
+
+    expect(medicineStepComplete(contradicted, false)).toBe(false);
+    expect(canConfirm([contradicted], [])).toBe(false);
+    expect(canConfirm([contradicted, med("high")], [])).toBe(false);
   });
 });
 
