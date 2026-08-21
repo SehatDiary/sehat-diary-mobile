@@ -28,9 +28,6 @@ import i18n from "../../i18n";
 import { doseInstruction } from "../../i18n/instruction";
 import {
   canConfirm,
-  countExceedingSlotLimit,
-  countMissingFrequency,
-  countMissingName,
   countUnreviewedLowConfidence,
   exceedsSlotLimit,
   isMeaningfulEdit,
@@ -505,15 +502,13 @@ function ReviewState({
   const isSummaryStep = step === totalSteps - 1;
   const medicineIndex = step - 1;
 
-  // A row missing a name or a frequency cannot be saved, and one naming more
-  // times of day than its frequency prescribes doses contradicts itself. The
-  // scheduler places reminders from these fields, and the server refuses to
-  // invent a schedule — so a row confirmed broken would sit in the medicine
-  // list reminding nobody, or reminding at times the doctor never chose.
-  const incompleteCount =
-    countMissingFrequency(medicines) +
-    countMissingName(medicines) +
-    countExceedingSlotLimit(medicines);
+  // Rows the confirm gate rejects for a field problem — counted per row, not
+  // per failure, or a blank added row (no name AND no frequency) reads as two
+  // things to fix. Review state is held true here because unreviewed rows get
+  // their own message with its own count.
+  const incompleteCount = medicines.filter(
+    (medicine) => !medicineStepComplete(medicine, true)
+  ).length;
   // A date the server cannot parse falls back to today without saying so, which
   // is the failure this screen now exists to prevent.
   const dateIsValid = isValidVisitDate(visitEdits.visit_date);
@@ -532,12 +527,13 @@ function ReviewState({
     const isReviewed = reviewedIndexes.includes(medicineIndex);
     nextEnabled = medicineStepComplete(medicine, isReviewed);
     if (!nextEnabled) {
+      // "Would pass if it were reviewed" — asked of the gate itself rather
+      // than re-deriving its clauses here, so a rule added to the gate can
+      // never make this hint point at the review button for a field problem.
       const onlyUnreviewed =
         medicine.confidence === "low" &&
         !isReviewed &&
-        (medicine.name ?? "").trim() !== "" &&
-        !needsFrequency(medicine) &&
-        !exceedsSlotLimit(medicine);
+        medicineStepComplete(medicine, true);
       nextHint = i18n.t(
         onlyUnreviewed
           ? "prescription.checkBeforeNext"
@@ -726,6 +722,7 @@ function MedicineStep({
   const isLow = med.confidence === "low";
   const isMedium = med.confidence === "medium";
   const timing = parseTiming(med.timing);
+  const limit = slotLimit(med.frequency);
 
   return (
     <View
@@ -830,12 +827,20 @@ function MedicineStep({
           onUpdateField(index, { timing: toggleSlot(med.timing, slot) })
         }
       />
-      {exceedsSlotLimit(med) && (
+      {limit !== null && exceedsSlotLimit(med) && (
         <Text style={styles.dateError}>
           {i18n.t("prescription.tooManySlots", {
+            // The stored frequency is free text ("Twice a day", "1-0-1"), so
+            // when it is not a canonical option the translated label for its
+            // dose count stands in, keeping the message localized —
+            // FREQUENCY_OPTIONS is ordered once..four, so index limit-1
+            // names that count.
             frequency:
-              optionLabel(FREQUENCY_OPTIONS, med.frequency) ?? med.frequency,
-            count: slotLimit(med.frequency) ?? 0,
+              optionLabel(FREQUENCY_OPTIONS, med.frequency) ??
+              (limit <= FREQUENCY_OPTIONS.length
+                ? i18n.t(FREQUENCY_OPTIONS[limit - 1].labelKey)
+                : med.frequency ?? ""),
+            count: limit,
           })}
         </Text>
       )}

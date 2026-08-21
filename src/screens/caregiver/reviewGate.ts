@@ -45,33 +45,52 @@ export function needsFrequency(
   return !(medicine.frequency ?? "").trim();
 }
 
-export function countMissingFrequency(
-  medicines: Pick<ExtractedMedicine, "frequency" | "dosing_interval">[]
-): number {
-  return medicines.filter(needsFrequency).length;
-}
+// A row with no name is not a medicine — blank rows are added deliberately,
+// and medicineStepComplete catches one the caregiver started and left. The
+// per-failure count helpers that used to live here were summed for the
+// confirm-button label, which double-counted a row broken in two ways; the
+// label now counts rows failing the gate instead.
 
-// A row with no name is not a medicine. Blank rows are added deliberately, so
-// this catches one the caregiver started and left.
-export function countMissingName(
-  medicines: Pick<ExtractedMedicine, "name">[]
-): number {
-  return medicines.filter((medicine) => !(medicine.name ?? "").trim()).length;
-}
-
-// How many doses a day each frequency prescribes. Kept in step with
-// FREQUENCY_OPTIONS and the server's DOSES_PER_DAY.
-const DOSES_PER_DAY: Record<string, number> = {
-  "once daily": 1,
-  "twice daily": 2,
-  "thrice daily": 3,
-  "four times daily": 4,
-};
+// How many doses a day the frequency prescribes, read the way the server
+// reads it — not by matching the exact FREQUENCY_OPTIONS strings. `frequency`
+// is a free extraction string: "Twice a day", "2 times daily" and "twice
+// daily" all reach this field for the same prescription, and the server
+// derives a dose count from all of them. A gate that only understood the
+// canonical strings would silently skip exactly the rows the server still
+// truncates.
+//
+// Keep in step with ReminderSchedulerService: DIGIT_DOSES, DOSES_PER_DAY and
+// DOSE_GRID, matched against the downcased text in the same order.
+const DIGIT_DOSES = /\b(\d+)\s*times\b/;
+const DOSES_PER_DAY: [RegExp, number][] = [
+  [/\b(?:once|one time)\b/, 1],
+  [/\b(?:twice|two times)\b/, 2],
+  [/\b(?:thrice|three times)\b/, 3],
+  [/\bfour times\b/, 4],
+];
+// The morning-afternoon-night grid ("1-0-1"): a dose per non-zero position.
+const DOSE_GRID = /\b(\d)\s*-\s*(\d)\s*-\s*(\d)\b/;
 
 export function slotLimit(
   frequency: string | null | undefined
 ): number | null {
-  return DOSES_PER_DAY[(frequency ?? "").trim()] ?? null;
+  const text = (frequency ?? "").toLowerCase();
+
+  const digits = text.match(DIGIT_DOSES)?.[1];
+  if (digits) return Number(digits);
+
+  const worded = DOSES_PER_DAY.find(([pattern]) => pattern.test(text));
+  if (worded) return worded[1];
+
+  const grid = text.match(DOSE_GRID);
+  if (grid) {
+    const doses = grid
+      .slice(1)
+      .filter((position) => Number(position) > 0).length;
+    return doses > 0 ? doses : null;
+  }
+
+  return null;
 }
 
 // More times of day than the frequency prescribes doses is a contradiction:
@@ -82,20 +101,20 @@ export function slotLimit(
 // the frequency lowered.
 //
 // Fewer slots than doses is fine: "twice daily, morning" is real information,
-// and the server tops up from its standard spread.
+// and the server tops up from its standard spread. And an as-needed medicine
+// is exempt, as it is from needsFrequency: the server schedules nothing for
+// SOS, so a leftover frequency against leftover timing slots is not a
+// contradiction anyone will be reminded by — blocking on it would force the
+// caregiver to delete real prescription guidance to proceed.
 export function exceedsSlotLimit(
-  medicine: Pick<ExtractedMedicine, "frequency" | "timing">
+  medicine: Pick<ExtractedMedicine, "frequency" | "timing" | "dosing_interval">
 ): boolean {
+  if (medicine.dosing_interval === "as_needed") return false;
+
   const limit = slotLimit(medicine.frequency);
   if (limit === null) return false;
 
   return parseTiming(medicine.timing).slots.length > limit;
-}
-
-export function countExceedingSlotLimit(
-  medicines: Pick<ExtractedMedicine, "frequency" | "timing">[]
-): number {
-  return medicines.filter(exceedsSlotLimit).length;
 }
 
 type GatedMedicine = Pick<

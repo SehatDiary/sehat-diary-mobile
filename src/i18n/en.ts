@@ -246,7 +246,7 @@ export default {
     whenToTake: "When to take",
     foodRelation: "Before or after food",
     intervalLabel: "Daily or weekly",
-    tooManySlots: "'%{frequency}' means at most %{count} — unselect a time",
+    tooManySlots: "'%{frequency}' means at most %{count} — unselect a time, or change how often",
     whichDay: "Which day",
     stepOf: "Step %{current} of %{total}",
     visitDetails: "Visit details",
